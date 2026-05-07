@@ -1,0 +1,919 @@
+<!DOCTYPE html><html lang="zh-Hans"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>旅行团损益计算器｜专业版</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
+</script>
+<style>
+:root{
+  --bg:#0b1320;--card:#121c2f;--muted:#9fb0c8;--text:#e6eef8;
+  --accent:#5cc8ff;--ok:#2ecc71;--bad:#ff6b6b;--warn:#ffb020;
+  --border:rgba(255,255,255,.07);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font:14px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
+.container{max-width:1280px;margin:0 auto;padding:16px}
+h1{font-size:24px;margin:0 0 6px}
+h2{font-size:16px;margin:20px 0 8px;color:var(--accent);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+h2 .toggle-btn{cursor:pointer;font-size:12px;background:#0e1728;border:1px solid var(--border);color:var(--muted);padding:2px 8px;border-radius:20px;user-select:none}
+.sub{color:var(--muted)}
+.grid{display:grid;gap:10px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:960px){.g4{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 6px 24px rgba(0,0,0,.3);margin-bottom:14px}
+label{display:block;font-weight:600;margin-bottom:4px;font-size:13px}
+input,select,textarea{width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--border);background:#0e1728;color:var(--text);font-size:13px}
+input::placeholder{color:#55657a}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1}
+button{cursor:pointer;transition:transform .05s;font-weight:700;font-size:13px;border-radius:10px;padding:9px 14px;border:none}
+button:active{transform:translateY(1px)}
+.btn-primary{background:linear-gradient(135deg,#3aa6ff,#6be7ff);color:#05101e}
+.btn-ghost{background:transparent;border:1px dashed #2a3a58;color:var(--muted)}
+.btn-warn{background:#2b1907;border:1px solid #4c2b09;color:#ffb86b}
+.btn-ok{background:#0f2b1a;border:1px solid #225b3a;color:#79f2a7}
+.btn-bad{background:#2b0f14;border:1px solid #5b2230;color:#ff98a4}
+.btn-accent{background:#0d2135;border:1px solid #1a4a7a;color:#5cc8ff}
+.btn-purple{background:#1a0d35;border:1px solid #4a1a7a;color:#c084fc}
+table{width:100%;border-collapse:separate;border-spacing:0;border-radius:12px;background:#0a1322;border:1px solid var(--border);overflow:hidden}
+th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--border);font-size:13px}
+th{background:#081020;color:#a8c2e7;position:sticky;top:0;z-index:1}
+tfoot td{font-weight:800;background:#081020}
+.right{text-align:right}.center{text-align:center}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:800px){.kpi{grid-template-columns:repeat(2,1fr)}}
+.kpi-box{background:#0e1728;border:1px solid var(--border);border-radius:14px;padding:14px;transition:background .3s,border-color .3s}
+.kpi-box .val{font-size:20px;font-weight:800;margin:4px 0}
+.kpi-box.profit-great{background:#0a2a14;border-color:#1a6b35}
+.kpi-box.profit-ok   {background:#0f2a10;border-color:#2a5e20}
+.kpi-box.profit-warn {background:#2a1e08;border-color:#6b4a10}
+.kpi-box.profit-bad  {background:#2a0f10;border-color:#6b1a20}
+.margin-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;margin-top:4px}
+.margin-badge.great{background:#0a3a1a;color:#2ecc71;border:1px solid #1a6b35}
+.margin-badge.ok   {background:#0f3a10;color:#52d68a;border:1px solid #2a5e20}
+.margin-badge.warn {background:#3a2a08;color:#ffb020;border:1px solid #6b4a10}
+.margin-badge.bad  {background:#3a0f10;color:#ff6b6b;border:1px solid #6b1a20}
+.pos{color:var(--ok)}.neg{color:var(--bad)}.warnc{color:var(--warn)}
+.hint{color:#7a90a8;font-size:11px;line-height:1.5}
+.muted{color:#8ba0bc}
+.price-row{display:flex;gap:5px}
+.price-row input{flex:3;min-width:0}
+.price-row select{flex:1.4;min-width:0}
+
+.collapsible{overflow:hidden;transition:max-height .35s ease}
+.collapsible.collapsed{max-height:0!important;overflow:hidden}
+.collapsible:not(.collapsed){max-height:none;overflow:visible}
+
+.chart-box{background:#0e1728;border:1px solid var(--border);border-radius:14px;padding:14px; position:relative; height:280px; display:flex; flex-direction:column;}
+.chart-box h3{margin:0 0 10px;font-size:13px;color:var(--accent); flex-shrink:0;}
+.chart-box canvas{flex:1; min-height:0; width:100%!important;}
+.trend-wrap{background:#0e1728;border:1px solid var(--border);border-radius:14px;padding:16px; position:relative; height:320px; display:flex; flex-direction:column;}
+.trend-wrap canvas{flex:1; min-height:0; width:100%!important;}
+
+.charts-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+@media(max-width:700px){.charts-wrap{grid-template-columns:1fr}}
+.tour-mgmt{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:#0a1322;border-radius:12px;margin-bottom:12px;border:1px solid var(--border)}
+.tour-mgmt label{margin:0;white-space:nowrap;color:var(--muted);font-size:12px}
+.tour-mgmt select{flex:1;min-width:140px;max-width:240px}
+.autosave-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.breakeven-bar,.perpax-bar{background:#0e1728;border:1px solid var(--border);border-radius:14px;padding:14px;margin-top:12px}
+.breakeven-bar h3,.perpax-bar h3{margin:0 0 8px;font-size:13px;color:var(--accent)}
+.be-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:600px){.be-grid{grid-template-columns:1fr}}
+.be-item,.pp-item{background:#081020;border-radius:10px;padding:10px}
+.be-item .be-val{font-size:18px;font-weight:800}.be-item .be-lbl{font-size:11px;color:var(--muted)}
+.pp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media(max-width:700px){.pp-grid{grid-template-columns:repeat(2,1fr)}}
+.pp-item .pp-val{font-size:16px;font-weight:800}.pp-item .pp-lbl{font-size:11px;color:var(--muted)}
+.date-error{display:none;color:#ff6b6b;font-size:11px;margin-top:4px;padding:4px 8px;background:#2b0f14;border-radius:6px;border:1px solid #5b2230}
+.date-error.show{display:block}
+input.input-error{border-color:#ff6b6b!important;background:#1a0a0e!important}
+
+.trip-days-edit{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.trip-days-edit input{width:50px;padding:6px 4px;text-align:center;font-size:15px;font-weight:800;background:#0d2135;border:1px solid #1a4a7a;border-radius:8px;color:var(--accent)}
+.trip-days-edit .sep{color:var(--muted);margin:0 2px}
+.trip-days-edit .unit{font-size:13px;font-weight:600;color:var(--text);margin-left:2px}
+
+.cost-card-list{display:none;flex-direction:column;gap:10px}
+.cost-card{background:#0a1322;border:1px solid var(--border);border-radius:12px;padding:12px}
+.cost-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.cost-card-title{font-weight:700;font-size:14px}.cost-card-subtotal{font-weight:800;color:var(--accent)}
+.cost-card-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cost-card-grid label{font-size:11px;color:var(--muted);margin-bottom:2px}
+@media(max-width:640px){.desktop-cost-table{display:none!important}.cost-card-list{display:flex!important}}
+
+code.tag{background:#0a1322;padding:2px 6px;border-radius:6px;color:#9ac7ff;font-weight:700;font-size:11px}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#0e1728;border:1px solid var(--border)}
+.flex-wrap{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.spacer{flex:1}
+
+.rate-status{font-size:11px;margin-top:4px;display:flex;align-items:center;gap:4px}
+.rate-live{color:var(--ok)}.rate-err{color:var(--bad)}.rate-loading{color:var(--warn)}
+.spin{display:inline-block;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.trend-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.trend-metric-btn{padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:#0a1322;color:var(--muted);font-weight:600;transition:all .15s}
+.trend-metric-btn.active{background:#0d2135;border-color:#1a4a7a;color:var(--accent)}
+.trend-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11px}
+.trend-legend span{display:flex;align-items:center;gap:5px}
+.trend-legend .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+
+.pdf-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;align-items:flex-start;justify-content:center;overflow:auto;padding:20px}
+.pdf-overlay.show{display:flex}
+.pdf-preview{background:#fff;color:#111;width:794px;min-height:1123px;padding:30px 35px;border-radius:4px;font:13px/1.6 "Segoe UI",system-ui,sans-serif;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.pdf-toolbar{position:sticky;top:0;z-index:10;display:flex;gap:8px;padding:10px 14px;background:#0e1728;border-radius:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.pdf-toolbar span{flex:1;font-size:12px;color:var(--muted)}
+.pdf-preview h2{font-size:14px;color:#0055aa;margin:18px 0 6px;border-bottom:1px solid #e0e8f0;padding-bottom:4px}
+.pdf-preview table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12px;background:#fff}
+.pdf-preview th{background:#f0f4f8;color:#333;padding:6px 8px;text-align:left;border:1px solid #dde4ec}
+.pdf-preview td{padding:5px 8px;border:1px solid #dde4ec;background:#fff}
+.pdf-preview .pdf-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #0055aa;padding-bottom:12px;margin-bottom:16px;flex-wrap:wrap;gap:12px}
+.pdf-preview .badge{display:inline-block;padding:2px 10px;border-radius:12px;font-weight:700;font-size:11px}
+.pdf-preview .badge.great{background:#e8f9ef;color:#1a7a3a;border:1px solid #a8d5b5}
+.pdf-preview .badge.ok   {background:#f0fff0;color:#2e7d32}
+.pdf-preview .badge.warn {background:#fff8e6;color:#b7600a}
+.pdf-preview .badge.bad  {background:#fff0f0;color:#c0392b}
+.pdf-preview .sig-row{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:40px}
+.pdf-preview .sig-box{border-top:1px solid #999;padding-top:6px;font-size:11px;color:#666}
+.pdf-preview .summary-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0}
+.pdf-preview .kpi-c{background:#f8fafc;border:1px solid #e0e8f0;border-radius:8px;padding:8px 10px}
+.pdf-preview .kpi-c .kv{font-size:16px;font-weight:800;color:#0055aa}
+.pdf-preview .kpi-c .kl{font-size:10px;color:#666}
+.pdf-preview .pos{color:#1a7a3a;font-weight:700}.pdf-preview .neg{color:#c0392b;font-weight:700}
+.pdf-preview .no-break{break-inside:avoid;page-break-inside:avoid}
+@media print{
+  :root{--bg:#fff;--card:#fff;--text:#111;--muted:#555;--accent:#0055aa;--border:#ccc;--ok:#1a7a3a;--bad:#c0392b;--warn:#b7600a}
+  body{background:#fff;color:#111;font-size:12px}
+  .no-print,.tour-mgmt,.flex-wrap button,.pdf-overlay{display:none!important}
+  .card{box-shadow:none;border:1px solid #ddd;break-inside:avoid;margin-bottom:10px}
+  .kpi-box,.be-item,.pp-item{border:1px solid #ccc;background:#f9f9f9}
+  input,select{border:none;background:none;color:#111;font-size:12px;padding:2px}
+  table{border:1px solid #ccc}th{background:#eee!important;color:#111!important}
+  .desktop-cost-table{display:table!important}.cost-card-list{display:none!important}
+  @page{margin:15mm}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="tour-mgmt no-print">
+  <label>📁 团档案：</label>
+  <select id="tourSelector"><option value="mod3cxdlsb3g">6D5N 上海桐庐之旅（建筑公司） · 2026-03-23</option><option value="mod3fsha53kw">8D7N 浙江之旅 8人 · 2026-03-18</option><option value="mod3q1fnx189">11D10N 重庆成都之旅 （教会） · 2026-03-18</option><option value="mod43lajghby">8D7N 张家界之旅 · 2026-04-09</option><option value="mod46y2hinjb">10D9N 浙江之旅 （玲姐） · 2026-04-11</option><option value="mod6566s4twy">4.10-12 日广州租车三天 · 2026-04-10</option></select>
+  <button class="btn-ok" id="saveTour">💾 保存</button>
+  <button class="btn-accent" id="newTour">➕ 新建</button>
+  <button class="btn-warn" id="cloneTour">📋 复制</button>
+  <button class="btn-bad" id="deleteTour">🗑 删除</button>
+  <span style="margin-left:6px;display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)">
+    <span class="autosave-dot"></span>自动保存
+  </span>
+</div>
+
+<header class="card">
+  <h1>旅行团损益计算器 <span class="sub" style="font-size:15px">RM / SGD / RMB · 专业版 v6.5</span></h1>
+  <div class="grid g4">
+    <div><label>团名</label><input id="tourName" value="6D5N 上海桐庐之旅"><label style="margin-top:8px">团号</label><input id="tourCode" value="" placeholder="例如: SH2026-03"></div>
+    <div><label>出团日期</label><input id="tourDate" type="date" value="2026-03-23"></div>
+    <div><label>回程日期</label><input id="returnDate" type="date" value="2026-03-28"><div class="date-error" id="dateError">⚠️ 回程日期不能早于或等于出团日期</div></div>
+    <div style="display:flex;flex-direction:column;justify-content:flex-end">
+      <label style="font-size:12px;color:var(--muted);margin-bottom:4px">行程天数（可编辑）</label>
+      <div class="trip-days-edit"><span>🗓</span><input id="tripDaysInput" type="number" min="1" value="6"><span class="unit">天</span><span class="sep">/</span><input id="tripNightsInput" type="number" min="0" value="5"><span class="unit">晚</span></div>
+    </div>
+  </div>
+  <div class="grid g3" style="margin-top:10px">
+    <div><label>报表币种</label><select id="reportCurrency"><option value="MYR" selected="">RM (MYR)</option><option value="SGD">SGD (S$)</option><option value="CNY">RMB (¥)</option></select></div>
+    <div><label>1 MYR = <span id="myrToSgdView">0.2899</span> SGD</label><input id="myrToSgd" type="number" step="0.0001" value="0.2899"></div>
+    <div><label>1 MYR = <span id="myrToCnyView">1.7200</span> RMB</label><input id="myrToCny" type="number" step="0.0001" value="1.72"></div>
+  </div>
+  <div style="margin-top:8px"><button class="btn-accent no-print" id="fetchRateBtn">🌐 获取实时汇率</button> <span class="hint" id="rateLastUpdate"></span></div>
+</header>
+
+<section class="card">
+  <div class="row" style="flex-wrap:wrap;gap:8px;justify-content:space-between">
+    <h2 style="margin:0">👥 团员价格（可添加老人/分批）</h2>
+    <div class="row no-print" style="gap:6px;width:auto;flex-wrap:wrap"><button class="btn-ghost" id="addPriceItem">＋ 添加价格组</button><button class="btn-warn" id="loadPriceDemo">载入示例</button><button class="btn-bad" id="clearPrice">清空</button></div>
+  </div>
+  <div style="overflow:auto"><table id="priceTable"><thead><tr><th>类别名称</th><th>人数</th><th>单价</th><th>币种</th><th class="right">小计</th><th class="no-print">操作</th></tr></thead><tbody id="priceTbody"><tr><td><input value="成人"></td><td><input type="number" min="0" value="21" style="width:80px"></td><td><input type="number" step="0.01" value="2788" style="width:100px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td class="right subtotal">RM 58,548.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="领队小红"></td><td><input type="number" min="0" value="1" style="width:80px"></td><td><input type="number" step="0.01" value="0" style="width:100px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td class="right subtotal">RM 0.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr></tbody><tfoot><tr><td colspan="4" class="right">总人数 / 销售收入</td><td class="right" id="priceTotal">22 人 / RM 58,548.00</td><td class="no-print"></td></tr></tfoot></table></div>
+  <div class="grid g4" style="margin-top:10px">
+    <div><label>佣金方式</label><select id="commissionType"><option value="pct">按销售额 %</option><option value="perHead">按人头（报表币/人）</option></select></div>
+    <div><label id="commissionLabel">佣金值（%）</label><input id="commissionVal" type="number" min="0" step="0.01"><div class="hint" id="commissionHint">例如 3 = 销售额的 3%</div></div>
+    <div><label>税费（按销售 %）</label><input id="taxPct" type="number" min="0" step="0.01" value="0"></div>
+    <div><label>其他扣减（固定，报表币）</label><input id="otherDeductions" type="number" min="0" step="0.01" value="3000"></div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="row" style="flex-wrap:wrap;gap:8px;justify-content:space-between"><h2 style="margin:0">其他收入明细</h2><div class="row no-print" style="gap:6px;width:auto;flex-wrap:wrap"><button class="btn-ghost" id="addRev">＋ 添加</button><button class="btn-warn" id="loadRevDemo">载入示例</button><button class="btn-bad" id="clearRev">清空</button></div></div>
+  <div style="overflow:auto"><table id="revTable"><thead><tr><th>项目</th><th>类型</th><th>单价</th><th>币种</th><th>数量</th><th class="right">小计</th><th class="no-print">操作</th></tr></thead><tbody id="revTbody"><tr><td><input value="领队小费"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="1000"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value=""></td><td class="right subtotal">RM 581.40</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr></tbody><tfoot><tr><td colspan="5" class="right">其他收入合计</td><td class="right" id="revExtraTotal">RM 581.40</td><td class="no-print"></td></tr></tfoot></table></div>
+</section>
+
+<section class="card">
+  <div class="row" style="flex-wrap:wrap;gap:8px;justify-content:space-between"><h2 style="margin:0">成本明细</h2><div class="row no-print" style="gap:6px;width:auto;flex-wrap:wrap"><button class="btn-ghost" id="addCost">＋ 添加</button><button class="btn-warn" id="loadDemo">载入示例</button><button class="btn-bad" id="clearAll">清空全部</button></div></div>
+  <div style="overflow:auto" class="desktop-cost-table"><table id="costTable"><thead><tr><th>项目</th><th>类型</th><th>单价</th><th>币种</th><th>数量</th><th class="right">小计</th><th class="no-print">操作</th></tr></thead><tbody id="costTbody"><tr><td><input value="地接款"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="17000" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 9,883.72</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="玲姐车费"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="440" style="min-width:70px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 440.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="回程出租车"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="100" style="min-width:70px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 100.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="小红飞机票"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="3425" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 1,991.28</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="保险"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="1081" style="min-width:70px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 1,081.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="司机补餐"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="510" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 296.51</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="大巴车费"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="10800" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 6,279.07</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="导游费"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="2200" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 1,279.07</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="酒店支付"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="9020" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 5,244.19</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="杯子定制"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="26" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="21" style="min-width:50px"></td><td class="right subtotal">RM 317.44</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="浙江定金"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="1500" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 872.09</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="杭州远景"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="5000" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 2,906.98</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="支付给晓琴"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="5106.2" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 2,968.72</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr></tbody><tfoot><tr><td colspan="5" class="right">成本合计</td><td class="right" id="costTotal">RM 33,660.07</td><td class="no-print"></td></tr></tfoot></table></div>
+  <div class="cost-card-list" id="costCardList"><div class="cost-card"><div class="cost-card-header"><span class="cost-card-title" style="color:#94a3b8">📌 其他</span><span class="cost-card-subtotal">RM 16,948.95</span></div><div class="cost-card-grid"><div><label>地接款</label><span style="color:var(--text);font-weight:600">RM 9,883.72</span></div><div><label>杯子定制</label><span style="color:var(--text);font-weight:600">RM 317.44</span></div><div><label>浙江定金</label><span style="color:var(--text);font-weight:600">RM 872.09</span></div><div><label>杭州远景</label><span style="color:var(--text);font-weight:600">RM 2,906.98</span></div><div><label>支付给晓琴</label><span style="color:var(--text);font-weight:600">RM 2,968.72</span></div></div></div><div class="cost-card"><div class="cost-card-header"><span class="cost-card-title" style="color:#5cc8ff">📌 交通</span><span class="cost-card-subtotal">RM 8,810.35</span></div><div class="cost-card-grid"><div><label>玲姐车费</label><span style="color:var(--text);font-weight:600">RM 440.00</span></div><div><label>回程出租车</label><span style="color:var(--text);font-weight:600">RM 100.00</span></div><div><label>小红飞机票</label><span style="color:var(--text);font-weight:600">RM 1,991.28</span></div><div><label>大巴车费</label><span style="color:var(--text);font-weight:600">RM 6,279.07</span></div></div></div><div class="cost-card"><div class="cost-card-header"><span class="cost-card-title" style="color:#facc15">📌 保险</span><span class="cost-card-subtotal">RM 1,081.00</span></div><div class="cost-card-grid"><div><label>保险</label><span style="color:var(--text);font-weight:600">RM 1,081.00</span></div></div></div><div class="cost-card"><div class="cost-card-header"><span class="cost-card-title" style="color:#fb923c">📌 餐饮</span><span class="cost-card-subtotal">RM 296.51</span></div><div class="cost-card-grid"><div><label>司机补餐</label><span style="color:var(--text);font-weight:600">RM 296.51</span></div></div></div><div class="cost-card"><div class="cost-card-header"><span class="cost-card-title" style="color:#f472b6">📌 导游</span><span class="cost-card-subtotal">RM 1,279.07</span></div><div class="cost-card-grid"><div><label>导游费</label><span style="color:var(--text);font-weight:600">RM 1,279.07</span></div></div></div><div class="cost-card"><div class="cost-card-header"><span class="cost-card-title" style="color:#a78bfa">📌 住宿</span><span class="cost-card-subtotal">RM 5,244.19</span></div><div class="cost-card-grid"><div><label>酒店支付</label><span style="color:var(--text);font-weight:600">RM 5,244.19</span></div></div></div></div>
+</section>
+
+<section class="card">
+  <div class="row" style="flex-wrap:wrap;gap:8px;justify-content:space-between"><h2 style="margin:0">退票 / 退款 / 取消团费</h2><div class="row no-print" style="gap:6px;width:auto;flex-wrap:wrap"><button class="btn-ghost" id="addRefund">＋ 添加</button><button class="btn-warn" id="loadRefundDemo">载入示例</button><button class="btn-bad" id="clearRefund">清空</button></div></div>
+  <div style="overflow:auto"><table id="refundTable"><thead><tr><th>项目</th><th>类型</th><th>单价</th><th>币种</th><th>数量</th><th class="right">小计</th><th class="no-print">操作</th></tr></thead><tbody id="refundTbody"><tr><td><input value="少收费用"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="4" style="min-width:70px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 4.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="退保险费"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="150" style="min-width:70px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 150.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr></tbody><tfoot><tr><td colspan="5" class="right">退款抵减合计</td><td class="right" id="refundTotal">RM 154.00</td><td class="no-print"></td></tr></tfoot></table></div>
+</section>
+
+<section class="card"><h2>可视化图表 <span class="toggle-btn no-print" id="toggleCharts">展开 ▼</span></h2><div class="collapsible collapsed" id="chartsBody" style="max-height:0;overflow:hidden"><div class="charts-wrap"><div class="chart-box"><h3>💰 收入 / 成本 / 利润</h3><canvas id="barChart"></canvas></div><div class="chart-box"><h3>🗂 成本分类占比</h3><canvas id="pieChart"></canvas><div id="pieLegend" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:10px;font-size:11px"></div></div></div></div></section>
+
+<section class="card"><h2>📈 多团历史趋势 <span class="toggle-btn no-print" id="toggleTrend">展开 ▼</span></h2><div class="collapsible collapsed" id="trendBody" style="max-height:0;overflow:hidden"><div class="trend-controls no-print"><button class="trend-metric-btn active" data-metric="profit">净利润</button><button class="trend-metric-btn active" data-metric="revenue">销售收入</button><button class="trend-metric-btn active" data-metric="cost">总成本</button><button class="btn-accent" id="refreshTrend">🔄 刷新</button></div><div class="trend-wrap"><canvas id="trendChart"></canvas><div id="trendLegend" class="trend-legend"></div></div></div></section>
+
+<section class="card">
+  <h2>汇总</h2>
+  <div class="kpi"><div class="kpi-box"><div class="muted">销售收入</div><div class="val" id="revenueTotal">RM 59,129.40</div><div class="hint" id="revenueBreak">基础 RM 58,548.00 + 其他 RM 581.40</div></div><div class="kpi-box"><div class="muted">扣减</div><div class="val" id="deductions">RM 2,000.00</div><div class="hint" id="deductionsBreak">佣金 RM 0.00 + 税 RM 0.00 + 其他 RM 2,000.00</div></div><div class="kpi-box"><div class="muted">成本合计</div><div class="val" id="costs">RM 33,506.07</div><div class="hint" id="costsBreak">固定 RM 33,660.07 + 变动 RM 0.00 − 退款 RM 154.00</div></div><div class="kpi-box profit-great" id="profitBox"><div class="muted">净利润</div><div class="val" id="profit"><span class="pos">RM 23,623.33</span></div><div id="marginBadgeWrap"><div class="margin-badge great">🟢 39.95%・利润良好</div></div></div></div>
+  <div class="perpax-bar">
+    <h3>👤 每人分析</h3>
+    <div class="pp-grid">
+      <div class="pp-item"><div class="pp-lbl">人均收入</div><div class="pp-val" id="perPaxRevenue">RM 2,687.70</div></div>
+      <div class="pp-item"><div class="pp-lbl">人均成本</div><div class="pp-val" id="perPaxCost">RM 1,523.00</div></div>
+      <div class="pp-item"><div class="pp-lbl">人均利润</div><div class="pp-val" id="perPaxProfit"><span class="pos">RM 1,073.79</span></div></div>
+      <div class="pp-item"><div class="pp-lbl">利润率</div><div class="pp-val" id="perPaxMargin"><span class="pos">39.95%</span></div></div>
+    </div>
+  </div>
+  <div class="flex-wrap no-print" style="margin-top:14px">
+    <button class="btn-primary" id="openPdfBtn">📄 专业 PDF 预览</button>
+    <button class="btn-ghost" id="printPage">🖨 打印</button>
+    <span class="spacer"></span>
+    <span class="pill">
+      <button class="btn-ok" id="downloadThis">📥 下载计算器</button>
+      <button class="btn-warn" id="downloadExcel">📊 Excel</button>
+      <button class="btn-purple" id="exportBackup">💾 导出备份</button>
+      <button class="btn-accent" id="importBackup">📂 导入备份</button>
+    </span>
+  </div>
+</section>
+
+<footer class="sub" style="opacity:.7;text-align:center;padding:10px;font-size:12px">专业版 v6.5 · 数据完整保存 · 备份导入导出 · 图表修复</footer>
+</div>
+
+<div class="pdf-overlay no-print" id="pdfOverlay"><div style="width:min(860px,98vw)"><div class="pdf-toolbar"><span id="pdfToolbarTitle">📄 PDF 预览</span><button class="btn-primary" id="doPrint">🖨 打印</button><button class="btn-warn" id="downloadReportHtml">⬇ HTML</button><button class="btn-bad" id="closePdf">✕</button></div><div class="pdf-preview" id="pdfContent"></div></div></div>
+
+<input type="file" id="importFileInput" accept=".json" style="display:none">
+
+<script>
+(function(){
+'use strict';
+const el=id=>document.getElementById(id);
+const fmt=(v,cur)=>{if(!isFinite(v))return'—';const s={MYR:'RM ',SGD:'S$ ',CNY:'¥ '};return(s[cur]||'')+Number(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});};
+const fmtN=v=>isFinite(v)?Number(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
+const typeLabel={fixed:'固定',perAll:'按人',perAdult:'仅成人',perChild:'仅儿童'};
+const CAT_COLORS={交通:'#5cc8ff',住宿:'#a78bfa',餐饮:'#fb923c',门票:'#34d399',导游:'#f472b6',保险:'#facc15',其他:'#94a3b8'};
+function getCatColor(name){
+  const n=(name||'').toLowerCase();
+  if(n.includes('交通')||n.includes('车')||n.includes('机票')||n.includes('大巴')||n.includes('flight'))return CAT_COLORS.交通;
+  if(n.includes('酒店')||n.includes('住宿')||n.includes('房')||n.includes('hotel'))return CAT_COLORS.住宿;
+  if(n.includes('餐')||n.includes('食')||n.includes('饭'))return CAT_COLORS.餐饮;
+  if(n.includes('门票')||n.includes('景点')||n.includes('园')||n.includes('ticket'))return CAT_COLORS.门票;
+  if(n.includes('导游')||n.includes('领队')||n.includes('司陪')||n.includes('guide'))return CAT_COLORS.导游;
+  if(n.includes('保险')||n.includes('险'))return CAT_COLORS.保险;
+  return CAT_COLORS.其他;
+}
+
+const state={myrToSgd:0.2899,myrToCny:1.72,reportCurrency:'MYR'};
+const toMYR=(a,c)=>{if(!a)return 0;if(c==='MYR')return+a;if(c==='SGD')return state.myrToSgd?+a/state.myrToSgd:0;if(c==='CNY')return state.myrToCny?+a/state.myrToCny:0;return 0;};
+const fromMYR=(m,t)=>{if(t==='MYR')return m;if(t==='SGD')return state.myrToSgd?m*state.myrToSgd:0;if(t==='CNY')return state.myrToCny?m*state.myrToCny:0;return m;};
+const syncRates=()=>{ state.myrToSgd=+el('myrToSgd').value||0; state.myrToCny=+el('myrToCny').value||0; state.reportCurrency=el('reportCurrency').value; el('myrToSgdView').textContent=state.myrToSgd.toFixed(4); el('myrToCnyView').textContent=state.myrToCny.toFixed(4); };
+
+async function fetchLiveRates(){
+  el('rateLastUpdate').innerHTML='<span class="rate-loading"><span class="spin">⏳</span> 获取中...</span>';
+  try{
+    const res=await fetch('https://api.frankfurter.app/latest?from=MYR&to=SGD,CNY');
+    if(res.ok){
+      const data=await res.json();
+      el('myrToSgd').value=data.rates.SGD.toFixed(4);
+      el('myrToCny').value=data.rates.CNY.toFixed(4);
+      el('rateLastUpdate').innerHTML='<span class="rate-live">✅ 汇率已更新 '+(new Date()).toLocaleTimeString()+'</span>';
+      compute();
+    }else{
+      el('rateLastUpdate').innerHTML='<span class="rate-err">❌ API 错误</span>';
+    }
+  }catch(e){
+    el('rateLastUpdate').innerHTML='<span class="rate-err">❌ 网络错误，请稍后重试</span>';
+  }
+}
+
+function validateDates(){const d1=el('tourDate').value,d2=el('returnDate').value;const bad=d1&&d2&&new Date(d2)<=new Date(d1);el('dateError').classList.toggle('show',!!bad);return!bad;}
+function calcDurationDays(){if(!validateDates())return null;const d1=el('tourDate').value,d2=el('returnDate').value;if(!d1||!d2)return null;return Math.round((new Date(d2)-new Date(d1))/86400000)+1;}
+let tripManualMode=false;
+function syncDurationBadge(){const auto=calcDurationDays();if(auto!==null&&!tripManualMode){el('tripDaysInput').value=auto;el('tripNightsInput').value=auto-1;}}
+el('tripDaysInput').addEventListener('input',()=>{tripManualMode=true;});
+el('tripNightsInput').addEventListener('input',()=>{tripManualMode=true;});
+el('tourDate').addEventListener('change',()=>{if(!tripManualMode)syncDurationBadge();});
+el('returnDate').addEventListener('change',()=>{if(!tripManualMode)syncDurationBadge();});
+
+function getMarginLevel(pct){if(pct<0)return{cls:'bad',icon:'🔴',label:'亏损',boxCls:'profit-bad'};if(pct<5)return{cls:'warn',icon:'🟠',label:'利润偏低',boxCls:'profit-warn'};if(pct<15)return{cls:'ok',icon:'🟡',label:'利润普通',boxCls:'profit-ok'};return{cls:'great',icon:'🟢',label:'利润良好',boxCls:'profit-great'};}
+function renderMarginBadge(pct){const lv=getMarginLevel(pct);el('profitBox').className='kpi-box '+lv.boxCls;el('marginBadgeWrap').innerHTML=`<div class="margin-badge ${lv.cls}">${lv.icon} ${pct.toFixed(2)}%・${lv.label}</div>`;}
+
+let barChartInstance=null,pieChartInstance=null,trendChartInstance=null;
+
+function makeToggle(btnId,bodyId,defaultCollapsed=false,onExpand=null){
+  const btn=el(btnId),body=el(bodyId);if(!btn||!body)return;
+  let isCollapsed=defaultCollapsed;
+  if(isCollapsed){body.classList.add('collapsed');body.style.maxHeight='0';body.style.overflow='hidden';btn.textContent='展开 ▼';}
+  else{body.style.maxHeight='none';body.style.overflow='visible';btn.textContent='收起 ▲';}
+  btn.addEventListener('click',()=>{isCollapsed=!isCollapsed;if(isCollapsed){body.style.maxHeight=body.scrollHeight+'px';body.style.overflow='hidden';body.classList.add('collapsed');requestAnimationFrame(()=>{body.style.maxHeight='0';});btn.textContent='展开 ▼';}else{body.classList.remove('collapsed');body.style.maxHeight='none';body.style.overflow='visible';btn.textContent='收起 ▲';if(onExpand)setTimeout(onExpand,400);}});
+}
+makeToggle('toggleCharts','chartsBody',true,()=>{ renderCharts(); });
+makeToggle('toggleTrend','trendBody',true,()=>{ renderTrendChart(); });
+
+const syncCommUI=()=>{const p=el('commissionType').value==='pct';el('commissionLabel').textContent=p?'佣金值（%）':'佣金值（报表币/人）';el('commissionHint').textContent=p?'例如 3 = 销售额的 3%':'例如 50 = 每人扣 50（报表币）';};
+el('commissionType').addEventListener('change',()=>{syncCommUI();compute();});
+
+const priceTbody=el('priceTbody');
+function buildPriceRow(row={}){const {name='',qty=0,unit=0,cur='MYR'}=row;const tr=document.createElement('tr');tr.innerHTML=`<td><input value="${name}"></td><td><input type="number" min="0" value="${qty}" style="width:80px"></td><td><input type="number" step="0.01" value="${unit}" style="width:100px"></td><td><select><option value="MYR" ${cur==='MYR'?'selected':''}>RM</option><option value="SGD" ${cur==='SGD'?'selected':''}>SGD</option><option value="CNY" ${cur==='CNY'?'selected':''}>RMB</option></select></td><td class="right subtotal">—</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td>`;priceTbody.appendChild(tr);tr.querySelector('.del-btn').addEventListener('click',()=>{tr.remove();compute();});tr.querySelectorAll('input,select').forEach(i=>i.addEventListener('input',compute));}
+el('addPriceItem').addEventListener('click',()=>buildPriceRow());
+el('loadPriceDemo').addEventListener('click',()=>{priceTbody.innerHTML='';[{name:'成人',qty:20,unit:2400,cur:'MYR'},{name:'儿童',qty:5,unit:1000,cur:'MYR'},{name:'老人',qty:4,unit:1800,cur:'MYR'},{name:'第二批成人',qty:10,unit:2500,cur:'MYR'}].forEach(buildPriceRow);compute();});
+el('clearPrice').addEventListener('click',()=>{priceTbody.innerHTML='';compute();});
+
+const costTbody2=el('costTbody'),costCardList=el('costCardList');
+function buildCostRow(row={}){const {name='',type='fixed',unit=0,cur='MYR',qty=''}=row;const tr=document.createElement('tr');tr.innerHTML=`<td><input value="${name}"></td><td><select>${Object.entries(typeLabel).map(([v,l])=>`<option value="${v}"${v===type?' selected':''}>${l}</option>`).join('')}</select></td><td><input type="number" step="0.01" value="${unit}" style="min-width:70px"></td><td><select><option value="MYR"${cur==='MYR'?' selected':''}>RM</option><option value="SGD"${cur==='SGD'?' selected':''}>SGD</option><option value="CNY"${cur==='CNY'?' selected':''}>RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="${qty}" style="min-width:50px"></td><td class="right subtotal">—</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td>`;costTbody2.appendChild(tr);tr.querySelector('.del-btn').addEventListener('click',()=>{tr.remove();compute();});tr.querySelectorAll('input,select').forEach(i=>i.addEventListener('input',compute));}
+el('addCost').addEventListener('click',()=>buildCostRow());
+el('loadDemo').addEventListener('click',()=>{costTbody2.innerHTML='';[{name:'地接款',type:'fixed',unit:56116,cur:'CNY'},{name:'酒店',type:'fixed',unit:5000,cur:'CNY'},{name:'交通',type:'fixed',unit:12117,cur:'CNY'},{name:'门票',type:'perAll',unit:60,cur:'MYR'}].forEach(buildCostRow);compute();});
+el('clearAll').addEventListener('click',()=>{if(!confirm('清空全部？'))return;costTbody2.innerHTML='';revTbody.innerHTML='';refundTbody.innerHTML='';compute();});
+
+const refundTbody=el('refundTbody');
+function buildRefundRow(row={}){const {name='',type='fixed',unit=0,cur='MYR',qty=''}=row;const tr=document.createElement('tr');tr.innerHTML=`<td><input value="${name}"></td><td><select>${Object.entries(typeLabel).map(([v,l])=>`<option value="${v}"${v===type?' selected':''}>${l}</option>`).join('')}</select></td><td><input type="number" step="0.01" value="${unit}" style="min-width:70px"></td><td><select><option value="MYR"${cur==='MYR'?' selected':''}>RM</option><option value="SGD"${cur==='SGD'?' selected':''}>SGD</option><option value="CNY"${cur==='CNY'?' selected':''}>RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="${qty}" style="min-width:50px"></td><td class="right subtotal">—</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td>`;refundTbody.appendChild(tr);tr.querySelector('.del-btn').addEventListener('click',()=>{tr.remove();compute();});tr.querySelectorAll('input,select').forEach(i=>i.addEventListener('input',compute));}
+el('addRefund').addEventListener('click',()=>buildRefundRow());
+el('loadRefundDemo').addEventListener('click',()=>{refundTbody.innerHTML='';[{name:'机票退票',type:'fixed',unit:500,cur:'MYR'}].forEach(buildRefundRow);compute();});
+el('clearRefund').addEventListener('click',()=>{refundTbody.innerHTML='';compute();});
+
+const revTbody=el('revTbody');
+function buildRevRow(row={}){const {name='',type='perAll',unit=0,cur='MYR',qty=''}=row;const tr=document.createElement('tr');tr.innerHTML=`<td><input value="${name}"></td><td><select>${Object.entries(typeLabel).map(([v,l])=>`<option value="${v}"${v===type?' selected':''}>${l}</option>`).join('')}</select></td><td><input type="number" step="0.01" value="${unit}"></td><td><select><option value="MYR"${cur==='MYR'?' selected':''}>RM</option><option value="SGD"${cur==='SGD'?' selected':''}>SGD</option><option value="CNY"${cur==='CNY'?' selected':''}>RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="${qty}"></td><td class="right subtotal">—</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td>`;revTbody.appendChild(tr);tr.querySelector('.del-btn').addEventListener('click',()=>{tr.remove();compute();});tr.querySelectorAll('input,select').forEach(i=>i.addEventListener('input',compute));}
+el('addRev').addEventListener('click',()=>buildRevRow());
+el('loadRevDemo').addEventListener('click',()=>{revTbody.innerHTML='';[{name:'单房差',type:'fixed',unit:800,cur:'MYR',qty:3}].forEach(buildRevRow);compute();});
+el('clearRev').addEventListener('click',()=>{revTbody.innerHTML='';compute();});
+
+function collectPriceRows(){
+  const rc=state.reportCurrency;
+  let total=0,adultCount=0,childCount=0;
+  const rows=[...priceTbody.querySelectorAll('tr')].map(tr=>{
+    const inps=tr.querySelectorAll('input'),sel=tr.querySelector('select');
+    const name=inps[0].value.trim()||'未命名',qty=+inps[1].value||0,unit=+inps[2].value||0,cur=sel.value;
+    const subtotalMYR=toMYR(unit,cur)*qty;
+    tr.querySelector('.subtotal').textContent=fmt(fromMYR(subtotalMYR,rc),rc);
+    total+=qty;
+    const nLower=name.toLowerCase();
+    if(nLower.includes('儿童')||nLower.includes('小孩')||nLower.includes('child'))childCount+=qty;
+    else adultCount+=qty;
+    return{name,qty,unit,cur,subtotalMYR};
+  });
+  return{rows,total,adultCount,childCount};
+}
+
+function getMultiplier(type,totalPax,adultCount,childCount,qty){
+  const m=qty===null||qty===undefined||qty===''?1:+qty;
+  switch(type){
+    case 'fixed':return m;
+    case 'perAll':return m*totalPax;
+    case 'perAdult':return m*(adultCount||0);
+    case 'perChild':return m*(childCount||0);
+    default:return m;
+  }
+}
+
+function collectCostRows(totalPax,adultCount,childCount){
+  const rc=state.reportCurrency;
+  return [...costTbody2.querySelectorAll('tr')].map(tr=>{
+    const inps=tr.querySelectorAll('input'),sels=tr.querySelectorAll('select');
+    const name=inps[0].value.trim(),type=sels[0].value,unit=+inps[1].value||0,cur=sels[1].value;
+    const qty=inps[2].value===''?null:+inps[2].value;
+    const m=getMultiplier(type,totalPax,adultCount,childCount,qty);
+    const sub=toMYR(unit,cur)*m;
+    tr.querySelector('.subtotal').textContent=fmt(fromMYR(sub,rc),rc);
+    return{name,type,unit,cur,qty,subtotalMYR:sub};
+  });
+}
+
+function collectRefundRows(totalPax,adultCount,childCount){
+  const rc=state.reportCurrency;
+  return [...refundTbody.querySelectorAll('tr')].map(tr=>{
+    const inps=tr.querySelectorAll('input'),sels=tr.querySelectorAll('select');
+    const name=inps[0].value.trim(),type=sels[0].value,unit=+inps[1].value||0,cur=sels[1].value;
+    const qty=inps[2].value===''?null:+inps[2].value;
+    const m=getMultiplier(type,totalPax,adultCount,childCount,qty);
+    const sub=toMYR(unit,cur)*m;
+    tr.querySelector('.subtotal').textContent=fmt(fromMYR(sub,rc),rc);
+    return{name,type,unit,cur,qty,subtotalMYR:sub};
+  });
+}
+
+function collectRevRows(totalPax,adultCount,childCount){
+  const rc=state.reportCurrency;
+  return [...revTbody.querySelectorAll('tr')].map(tr=>{
+    const inps=tr.querySelectorAll('input'),sels=tr.querySelectorAll('select');
+    const name=inps[0].value.trim(),type=sels[0].value,unit=+inps[1].value||0,cur=sels[1].value;
+    const qty=inps[2].value===''?null:+inps[2].value;
+    const m=getMultiplier(type,totalPax,adultCount,childCount,qty);
+    const sub=toMYR(unit,cur)*m;
+    tr.querySelector('.subtotal').textContent=fmt(fromMYR(sub,rc),rc);
+    return{name,type,unit,cur,qty,subtotalMYR:sub};
+  });
+}
+
+function calcTotals(){
+  syncRates();
+  const {rows:priceRows,total,adultCount,childCount}=collectPriceRows();
+  const baseRevMYR=priceRows.reduce((s,r)=>s+r.subtotalMYR,0);
+  const revRows=collectRevRows(total,adultCount,childCount),extraMYR=revRows.reduce((s,r)=>s+r.subtotalMYR,0);
+  const totalRevMYR=baseRevMYR+extraMYR;
+  const rc=state.reportCurrency;
+  const commType=el('commissionType').value,commVal=+el('commissionVal').value||0;
+  let commMYR=commType==='pct'?commVal/100*totalRevMYR:toMYR(commVal,rc)*total;
+  const taxMYR=(+el('taxPct').value||0)/100*totalRevMYR;
+  const otherMYR=toMYR(+el('otherDeductions').value||0,rc);
+  const deduMYR=commMYR+taxMYR+otherMYR;
+  const costRows=collectCostRows(total,adultCount,childCount),refundRows=collectRefundRows(total,adultCount,childCount);
+  const refundMYR=refundRows.reduce((s,r)=>s+r.subtotalMYR,0);
+  const fixedMYR=costRows.filter(r=>r.type==='fixed').reduce((s,r)=>s+r.subtotalMYR,0);
+  const varMYR=costRows.filter(r=>r.type!=='fixed').reduce((s,r)=>s+r.subtotalMYR,0);
+  const totalCostMYR=Math.max(0,fixedMYR+varMYR-refundMYR);
+  const profitMYR=totalRevMYR-deduMYR-totalCostMYR;
+  const margin=totalRevMYR>0?profitMYR/totalRevMYR*100:0;
+  return{total,adultCount,childCount,priceRows,totalRevMYR,deduMYR,totalCostMYR,profitMYR,margin,fixedMYR,varMYR,refundMYR,extraMYR,costRows,refundRows,revRows,commMYR,taxMYR,otherMYR};
+}
+
+function renderCostCards(costRows,rc){
+  const grouped={};
+  costRows.forEach(r=>{
+    const cat=Object.keys(CAT_COLORS).find(k=>getCatColor(r.name)===CAT_COLORS[k])||'其他';
+    if(!grouped[cat])grouped[cat]=[];
+    grouped[cat].push(r);
+  });
+  costCardList.innerHTML=Object.entries(grouped).map(([cat,items])=>{
+    const sub=items.reduce((s,r)=>s+r.subtotalMYR,0);
+    return`<div class="cost-card"><div class="cost-card-header"><span class="cost-card-title" style="color:${CAT_COLORS[cat]||'#94a3b8'}">📌 ${cat}</span><span class="cost-card-subtotal">${fmt(fromMYR(sub,rc),rc)}</span></div><div class="cost-card-grid">${items.map(r=>`<div><label>${r.name||'未命名'}</label><span style="color:var(--text);font-weight:600">${fmt(fromMYR(r.subtotalMYR,rc),rc)}</span></div>`).join('')}</div></div>`;
+  }).join('');
+}
+
+function renderCharts(){
+  const chartBody=el('chartsBody');
+  if(chartBody.classList.contains('collapsed'))return;
+  const t=calcTotals(),rc=state.reportCurrency;
+  renderBarChart(t,rc);
+  renderPieChart(t,rc);
+}
+
+function renderBarChart(t,rc){
+  const ctx=el('barChart');if(!ctx)return;
+  if(barChartInstance){barChartInstance.destroy();barChartInstance=null;}
+  const R=v=>fromMYR(v,rc);
+  barChartInstance=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:['销售收入','扣减','总成本','净利润'],
+      datasets:[{
+        label:'金额 ('+rc+')',
+        data:[R(t.totalRevMYR),R(t.deduMYR),R(t.totalCostMYR),R(t.profitMYR)],
+        backgroundColor:[
+          'rgba(92,200,255,.7)',
+          'rgba(255,176,32,.7)',
+          'rgba(255,107,107,.7)',
+          t.profitMYR>=0?'rgba(46,204,113,.7)':'rgba(255,107,107,.7)'
+        ],
+        borderColor:[
+          '#5cc8ff','#ffb020','#ff6b6b',
+          t.profitMYR>=0?'#2ecc71':'#ff6b6b'
+        ],
+        borderWidth:2,
+        borderRadius:8,
+        borderSkipped:false
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>fmt(ctx.raw,rc)}}
+      },
+      scales:{
+        y:{ticks:{color:'#9fb0c8',callback:v=>fmt(v,rc)},grid:{color:'rgba(255,255,255,.06)'}},
+        x:{ticks:{color:'#9fb0c8'},grid:{display:false}}
+      }
+    }
+  });
+}
+
+function renderPieChart(t,rc){
+  const ctx=el('pieChart');if(!ctx)return;
+  if(pieChartInstance){pieChartInstance.destroy();pieChartInstance=null;}
+  const catMap={};
+  t.costRows.forEach(r=>{
+    const cat=Object.keys(CAT_COLORS).find(k=>getCatColor(r.name)===CAT_COLORS[k])||'其他';
+    catMap[cat]=(catMap[cat]||0)+r.subtotalMYR;
+  });
+  const entries=Object.entries(catMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  if(entries.length===0){
+    el('pieLegend').innerHTML='<span style="color:var(--muted)">暂无成本数据</span>';
+    return;
+  }
+  const labels=entries.map(([k])=>k);
+  const data=entries.map(([,v])=>fromMYR(v,rc));
+  const colors=entries.map(([k])=>CAT_COLORS[k]||'#94a3b8');
+  el('pieLegend').innerHTML=entries.map(([k,v],i)=>`<span style="display:flex;align-items:center;gap:5px"><span class="dot" style="background:${colors[i]}"></span>${k}: ${fmt(fromMYR(v,rc),rc)}</span>`).join('');
+  pieChartInstance=new Chart(ctx,{
+    type:'doughnut',
+    data:{labels,datasets:[{data,backgroundColor:colors,borderColor:'#0e1728',borderWidth:3,hoverBorderColor:'#fff'}]},
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>{const v=ctx.raw;const total=ctx.dataset.data.reduce((a,b)=>a+b,0);const pct=total>0?(v/total*100).toFixed(1):'0';return fmt(v,rc)+' ('+pct+'%)';}}}
+      }
+    }
+  });
+}
+
+function renderTrendChart(){
+  const trendBody=el('trendBody');
+  if(trendBody.classList.contains('collapsed'))return;
+  const data=readLS();const tours=data.tours||[];
+  if(tours.length===0){
+    el('trendLegend').innerHTML='<span style="color:var(--muted)">暂无团档案数据</span>';
+    if(trendChartInstance){trendChartInstance.destroy();trendChartInstance=null;}
+    return;
+  }
+  const activeMetrics=[];
+  document.querySelectorAll('.trend-metric-btn.active').forEach(b=>activeMetrics.push(b.dataset.metric));
+  if(activeMetrics.length===0)activeMetrics.push('profit');
+  const rc=state.reportCurrency;
+  const sorted=tours.filter(t=>t.tourDate).sort((a,b)=>new Date(a.tourDate)-new Date(b.tourDate));
+  if(sorted.length===0){
+    el('trendLegend').innerHTML='<span style="color:var(--muted)">团档案缺少日期</span>';
+    return;
+  }
+  const labels=sorted.map(t=>t.tourDate+(t.tourName?' '+t.tourName.slice(0,8):''));
+  const datasets=[];
+  const metricColors={profit:'#2ecc71',revenue:'#5cc8ff',cost:'#ff6b6b'};
+  const metricNames={profit:'净利润',revenue:'销售收入',cost:'总成本'};
+  activeMetrics.forEach(metric=>{
+    const values=sorted.map(t=>{
+      const savedRC=t.reportCurrency||'MYR';
+      const savedSgd=+t.myrToSgd||0.2899,savedCny=+t.myrToCny||1.72;
+      const toMYR_saved=(a,c)=>{if(!a)return 0;if(c==='MYR')return+a;if(c==='SGD')return savedSgd?+a/savedSgd:0;if(c==='CNY')return savedCny?+a/savedCny:0;return 0;};
+      const priceRows=t.priceRows||[];
+      let totalPax=0,adultC=0,childC=0;
+      priceRows.forEach(r=>{const q=+r.qty||0;totalPax+=q;const nl=(r.name||'').toLowerCase();if(nl.includes('儿童')||nl.includes('小孩')||nl.includes('child'))childC+=q;else adultC+=q;});
+      const baseRev=priceRows.reduce((s,r)=>s+toMYR_saved(+r.unit||0,r.cur||'MYR')*(+r.qty||0),0);
+      const revRowsT=t.revRows||[];
+      const extraRev=revRowsT.reduce((s,r)=>{
+        const m=getMultiplier(r.type||'fixed',totalPax,adultC,childC,r.qty===''?null:+r.qty);
+        return s+toMYR_saved(+r.unit||0,r.cur||'MYR')*m;
+      },0);
+      const totalRev=baseRev+extraRev;
+      const costRowsT=t.costRows||[];
+      const refundRowsT=t.refundRows||[];
+      const costTotal=costRowsT.reduce((s,r)=>{
+        const m=getMultiplier(r.type||'fixed',totalPax,adultC,childC,r.qty===''?null:+r.qty);
+        return s+toMYR_saved(+r.unit||0,r.cur||'MYR')*m;
+      },0);
+      const refundTotal=refundRowsT.reduce((s,r)=>{
+        const m=getMultiplier(r.type||'fixed',totalPax,adultC,childC,r.qty===''?null:+r.qty);
+        return s+toMYR_saved(+r.unit||0,r.cur||'MYR')*m;
+      },0);
+      const netCost=Math.max(0,costTotal-refundTotal);
+      const commTypeT=t.commissionType||'pct';const commValT=+t.commissionVal||0;
+      const comm=commTypeT==='pct'?commValT/100*totalRev:toMYR_saved(commValT,savedRC)*totalPax;
+      const tax=(+t.taxPct||0)/100*totalRev;
+      const other=toMYR_saved(+t.otherDeductions||0,savedRC);
+      const dedu=comm+tax+other;
+      const profit=totalRev-dedu-netCost;
+      if(metric==='profit')return fromMYR(profit,rc);
+      if(metric==='revenue')return fromMYR(totalRev,rc);
+      if(metric==='cost')return fromMYR(netCost,rc);
+      return 0;
+    });
+    datasets.push({label:metricNames[metric]||metric,data:values,borderColor:metricColors[metric]||'#fff',backgroundColor:metricColors[metric]+'33',borderWidth:3,tension:.35,fill:false,pointRadius:5,pointHoverRadius:7});
+  });
+  const ctx=el('trendChart');if(!ctx)return;
+  if(trendChartInstance){trendChartInstance.destroy();trendChartInstance=null;}
+  trendChartInstance=new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{color:'#9fb0c8',usePointStyle:true,padding:20,font:{size:11}}},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+fmt(ctx.raw,rc)}}},
+      scales:{y:{ticks:{color:'#9fb0c8',callback:v=>fmt(v,rc)},grid:{color:'rgba(255,255,255,.06)'}},x:{ticks:{color:'#9fb0c8',maxRotation:45,font:{size:10}},grid:{display:false}}}
+    }
+  });
+  el('trendLegend').innerHTML=datasets.map(d=>`<span><span class="dot" style="background:${d.borderColor}"></span>${d.label}</span>`).join('');
+}
+
+function buildPdfContent(){
+  const t=calcTotals(),rc=state.reportCurrency,R=v=>fmt(fromMYR(v,rc),rc);
+  const lv=getMarginLevel(t.margin);
+  const tourName=el('tourName').value||'未命名团';
+  const tourCode=el('tourCode').value||'';
+  const tourDate=el('tourDate').value||'—';
+  const returnDate=el('returnDate').value||'—';
+  const days=el('tripDaysInput').value||'—';
+  const nights=el('tripNightsInput').value||'—';
+  let html=`<div class="pdf-header"><div><h1 style="margin:0;font-size:20px;color:#0055aa">${tourName}</h1><p style="margin:4px 0;color:#555">团号: ${tourCode||'—'} ｜ 日期: ${tourDate} → ${returnDate} ｜ ${days}天${nights}晚</p></div><div style="text-align:right"><span class="badge ${lv.cls}">${lv.icon} ${t.margin.toFixed(2)}% · ${lv.label}</span><br><span style="font-size:11px;color:#888">币种: ${rc}</span></div></div>`;
+
+  html+=`<h2>📊 汇总</h2><div class="summary-kpi"><div class="kpi-c"><div class="kl">销售收入</div><div class="kv">${R(t.totalRevMYR)}</div></div><div class="kpi-c"><div class="kl">扣减</div><div class="kv">${R(t.deduMYR)}</div></div><div class="kpi-c"><div class="kl">成本合计</div><div class="kv">${R(t.totalCostMYR)}</div></div><div class="kpi-c"><div class="kl">净利润</div><div class="kv ${t.profitMYR>=0?'pos':'neg'}">${R(t.profitMYR)}</div></div></div>`;
+
+  html+=`<h2>👥 团员价格明细</h2><table><thead><tr><th>类别</th><th>人数</th><th class="right">单价</th><th>币种</th><th class="right">小计</th></tr></thead><tbody>`;
+  t.priceRows.forEach(r=>{html+=`<tr><td>${r.name}</td><td>${r.qty}</td><td class="right">${fmtN(r.unit)}</td><td>${r.cur}</td><td class="right">${R(r.subtotalMYR)}</td></tr>`;});
+  html+=`</tbody></table>`;
+
+  if(t.revRows.length>0){
+    html+=`<h2>💰 其他收入</h2><table><thead><tr><th>项目</th><th>类型</th><th class="right">单价</th><th>币种</th><th>数量</th><th class="right">小计</th></tr></thead><tbody>`;
+    t.revRows.forEach(r=>{html+=`<tr><td>${r.name}</td><td>${typeLabel[r.type]||r.type}</td><td class="right">${fmtN(r.unit)}</td><td>${r.cur}</td><td>${r.qty??1}</td><td class="right">${R(r.subtotalMYR)}</td></tr>`;});
+    html+=`</tbody></table>`;
+  }
+
+  html+=`<h2>📋 成本明细</h2><table><thead><tr><th>项目</th><th>类型</th><th class="right">单价</th><th>币种</th><th>数量</th><th class="right">小计</th></tr></thead><tbody>`;
+  t.costRows.forEach(r=>{html+=`<tr><td>${r.name}</td><td>${typeLabel[r.type]||r.type}</td><td class="right">${fmtN(r.unit)}</td><td>${r.cur}</td><td>${r.qty??1}</td><td class="right">${R(r.subtotalMYR)}</td></tr>`;});
+  html+=`</tbody></table>`;
+
+  if(t.refundRows.length>0){
+    html+=`<h2>🔄 退款抵减</h2><table><thead><tr><th>项目</th><th>类型</th><th class="right">单价</th><th>币种</th><th>数量</th><th class="right">小计</th></tr></thead><tbody>`;
+    t.refundRows.forEach(r=>{html+=`<tr><td>${r.name}</td><td>${typeLabel[r.type]||r.type}</td><td class="right">${fmtN(r.unit)}</td><td>${r.cur}</td><td>${r.qty??1}</td><td class="right">${R(r.subtotalMYR)}</td></tr>`;});
+    html+=`</tbody></table>`;
+  }
+
+  html+=`<h2>📐 扣减明细</h2><table><thead><tr><th>项目</th><th class="right">金额</th></tr></thead><tbody><tr><td>佣金</td><td class="right">${R(t.commMYR)}</td></tr><tr><td>税费</td><td class="right">${R(t.taxMYR)}</td></tr><tr><td>其他扣减</td><td class="right">${R(t.otherMYR)}</td></tr></tbody></table>`;
+
+  html+=`<div class="sig-row no-break"><div class="sig-box">制表人：_______________</div><div class="sig-box">审核人：_______________</div><div class="sig-box">日期：_______________</div></div>`;
+  html+=`<p style="text-align:center;color:#999;margin-top:20px;font-size:10px">旅行团损益计算器 · 专业版 v6.5 · 生成于 ${new Date().toLocaleString()}</p>`;
+
+  el('pdfContent').innerHTML=html;
+  el('pdfToolbarTitle').textContent='📄 PDF 预览 · '+tourName;
+}
+
+function compute(){
+  syncDurationBadge();
+  const t=calcTotals(),rc=state.reportCurrency,R=v=>fmt(fromMYR(v,rc),rc);
+  el('priceTotal').textContent=`${t.total} 人 / ${R(t.totalRevMYR-t.extraMYR)}`;
+  el('revenueTotal').textContent=R(t.totalRevMYR);
+  el('revenueBreak').textContent=`基础 ${R(t.totalRevMYR-t.extraMYR)} + 其他 ${R(t.extraMYR)}`;
+  el('deductions').textContent=R(t.deduMYR);
+  el('deductionsBreak').textContent=`佣金 ${R(t.commMYR)} + 税 ${R(t.taxMYR)} + 其他 ${R(t.otherMYR)}`;
+  el('costs').textContent=R(t.totalCostMYR);
+  el('costsBreak').textContent=`固定 ${R(t.fixedMYR)} + 变动 ${R(t.varMYR)} − 退款 ${R(t.refundMYR)}`;
+  el('costTotal').textContent=R(t.fixedMYR+t.varMYR);
+  el('refundTotal').textContent=R(t.refundMYR);
+  el('revExtraTotal').textContent=R(t.extraMYR);
+  el('profit').innerHTML=`<span class="${t.profitMYR>=0?'pos':'neg'}">${R(t.profitMYR)}</span>`;
+  renderMarginBadge(t.margin);
+  const perPaxRev = t.total > 0 ? fromMYR(t.totalRevMYR, rc) / t.total : 0;
+  const perPaxCost = t.total > 0 ? fromMYR(t.totalCostMYR, rc) / t.total : 0;
+  const perPaxProfit = t.total > 0 ? fromMYR(t.profitMYR, rc) / t.total : 0;
+  const perPaxMargin = t.totalRevMYR > 0 ? (t.profitMYR / t.totalRevMYR * 100) : 0;
+  el('perPaxRevenue').textContent = fmt(perPaxRev, rc);
+  el('perPaxCost').textContent = fmt(perPaxCost, rc);
+  el('perPaxProfit').innerHTML = `<span class="${perPaxProfit>=0?'pos':'neg'}">${fmt(perPaxProfit, rc)}</span>`;
+  el('perPaxMargin').innerHTML = `<span class="${perPaxMargin>=0?'pos':'neg'}">${perPaxMargin.toFixed(2)}%</span>`;
+  renderCostCards(t.costRows,rc);
+  renderCharts();
+  autoSave();
+}
+
+const LS_KEY='tourCalcPro_v6';
+const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const readLS=()=>{try{return JSON.parse(localStorage.getItem(LS_KEY))||{tours:[],current:null};}catch(e){return{tours:[],current:null};}};
+const writeLS=d=>localStorage.setItem(LS_KEY,JSON.stringify(d));
+
+function getAllTableData(){
+  const priceRows=[...priceTbody.querySelectorAll('tr')].map(tr=>{const inps=tr.querySelectorAll('input'),sel=tr.querySelector('select');return{name:inps[0].value,qty:inps[1].value,unit:inps[2].value,cur:sel.value};});
+  const costRows=[...costTbody2.querySelectorAll('tr')].map(tr=>{const inps=tr.querySelectorAll('input'),sels=tr.querySelectorAll('select');return{name:inps[0].value,type:sels[0].value,unit:inps[1].value,cur:sels[1].value,qty:inps[2].value};});
+  const refundRows=[...refundTbody.querySelectorAll('tr')].map(tr=>{const inps=tr.querySelectorAll('input'),sels=tr.querySelectorAll('select');return{name:inps[0].value,type:sels[0].value,unit:inps[1].value,cur:sels[1].value,qty:inps[2].value};});
+  const revRows=[...revTbody.querySelectorAll('tr')].map(tr=>{const inps=tr.querySelectorAll('input'),sels=tr.querySelectorAll('select');return{name:inps[0].value,type:sels[0].value,unit:inps[1].value,cur:sels[1].value,qty:inps[2].value};});
+  return{priceRows,costRows,refundRows,revRows};
+}
+
+function pageToObject(){
+  const tables=getAllTableData();
+  return{
+    tourName:el('tourName').value, tourCode:el('tourCode').value,
+    tourDate:el('tourDate').value, returnDate:el('returnDate').value,
+    reportCurrency:el('reportCurrency').value, myrToSgd:el('myrToSgd').value, myrToCny:el('myrToCny').value,
+    commissionType:el('commissionType').value, commissionVal:el('commissionVal').value,
+    taxPct:el('taxPct').value, otherDeductions:el('otherDeductions').value,
+    ...tables
+  };
+}
+
+function objectToPage(obj){
+  if(!obj)return;
+  const set=(id,v)=>{if(el(id))el(id).value=v||'';};
+  set('tourName',obj.tourName); set('tourCode',obj.tourCode);
+  set('tourDate',obj.tourDate); set('returnDate',obj.returnDate);
+  set('reportCurrency',obj.reportCurrency||'MYR');
+  set('myrToSgd',obj.myrToSgd||0.2899); set('myrToCny',obj.myrToCny||1.72);
+  set('commissionType',obj.commissionType||'pct'); set('commissionVal',obj.commissionVal||'');
+  set('taxPct',obj.taxPct||0); set('otherDeductions',obj.otherDeductions||0);
+  priceTbody.innerHTML=''; (obj.priceRows||[]).forEach(r=>buildPriceRow(r));
+  costTbody2.innerHTML=''; (obj.costRows||[]).forEach(r=>buildCostRow(r));
+  refundTbody.innerHTML=''; (obj.refundRows||[]).forEach(r=>buildRefundRow(r));
+  revTbody.innerHTML=''; (obj.revRows||[]).forEach(r=>buildRevRow(r));
+  syncCommUI(); tripManualMode=false; syncDurationBadge(); compute();
+}
+
+function refreshSelector(id){
+  const data=readLS(),sel=el('tourSelector');
+  sel.innerHTML='';
+  if(data.tours.length){
+    data.tours.forEach(t=>{const o=document.createElement('option');o.value=t.id;o.textContent=(t.tourName||'未命名')+(t.tourDate?' · '+t.tourDate:'');if(t.id===id)o.selected=true;sel.appendChild(o);});
+  } else {
+    sel.innerHTML='<option>（无团档案）</option>';
+  }
+}
+
+function saveTourById(id){
+  const data=readLS();
+  const obj=pageToObject();
+  obj.id = id;
+  const idx = data.tours.findIndex(t=>t.id===id);
+  if(idx>=0) data.tours[idx] = obj;
+  else data.tours.push(obj);
+  data.current = id;
+  writeLS(data);
+  refreshSelector(id);
+}
+
+let autoTimer;
+function autoSave(){
+  clearTimeout(autoTimer);
+  autoTimer = setTimeout(()=>{
+    const data=readLS();
+    let id = data.current;
+    if(!id){ id = genId(); data.current = id; writeLS(data); }
+    saveTourById(id);
+  }, 1000);
+}
+
+el('saveTour').addEventListener('click',()=>{
+  const data=readLS();
+  let id = data.current || genId();
+  data.current = id; writeLS(data);
+  saveTourById(id);
+});
+
+el('newTour').addEventListener('click',()=>{
+  const id=genId(),data=readLS();
+  data.current=id; writeLS(data);
+  priceTbody.innerHTML=''; costTbody2.innerHTML=''; refundTbody.innerHTML=''; revTbody.innerHTML='';
+  el('tourName').value='新旅行团'; el('tourCode').value='';
+  el('tourDate').value=''; el('returnDate').value='';
+  el('commissionType').value='pct'; el('commissionVal').value=''; el('taxPct').value=0; el('otherDeductions').value=0;
+  tripManualMode=false;
+  syncCommUI(); compute();
+  saveTourById(id);
+});
+
+el('cloneTour').addEventListener('click',()=>{
+  const id=genId(),data=readLS(),obj=pageToObject();
+  obj.id=id; obj.tourName=(obj.tourName||'团')+'（副本）';
+  data.tours.push(obj); data.current=id; writeLS(data);
+  objectToPage(obj); refreshSelector(id);
+});
+
+el('deleteTour').addEventListener('click',()=>{
+  const data=readLS(),id=data.current;
+  if(!id) return;
+  if(!confirm('确定删除当前团档案？')) return;
+  data.tours = data.tours.filter(t=>t.id!==id);
+  data.current = data.tours.length ? data.tours[data.tours.length-1].id : null;
+  writeLS(data);
+  if(data.current){
+    const t = data.tours.find(x=>x.id===data.current);
+    if(t) objectToPage(t);
+  } else {
+    priceTbody.innerHTML=''; costTbody2.innerHTML=''; refundTbody.innerHTML=''; revTbody.innerHTML='';
+    el('tourName').value=''; el('tourCode').value='';
+    compute();
+  }
+  refreshSelector(data.current);
+});
+
+el('tourSelector').addEventListener('change',()=>{
+  const id = el('tourSelector').value;
+  if(!id) return;
+  const data=readLS(); data.current=id; writeLS(data);
+  const t = data.tours.find(x=>x.id===id);
+  if(t) objectToPage(t);
+});
+
+el('openPdfBtn').addEventListener('click',()=>{buildPdfContent();el('pdfOverlay').classList.add('show');});
+el('closePdf').addEventListener('click',()=>{el('pdfOverlay').classList.remove('show');});
+el('doPrint').addEventListener('click',()=>{
+  const w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>旅行团损益报告</title><style>body{font:13px/1.6 system-ui,sans-serif;color:#111;background:#fff;padding:30px}table{width:100%;border-collapse:collapse;margin:8px 0}th{background:#f0f4f8;padding:6px 8px;text-align:left;border:1px solid #dde4ec}td{padding:5px 8px;border:1px solid #dde4ec}.right{text-align:right}.pos{color:#1a7a3a}.neg{color:#c0392b}h2{color:#0055aa;border-bottom:1px solid #e0e8f0;padding-bottom:4px;font-size:14px}.kpi-c{display:inline-block;width:22%;background:#f8fafc;border:1px solid #e0e8f0;border-radius:8px;padding:8px;margin:4px 1%;vertical-align:top}.kv{font-size:16px;font-weight:800;color:#0055aa}.kl{font-size:10px;color:#666}.badge{display:inline-block;padding:2px 10px;border-radius:12px;font-weight:700;font-size:11px}.badge.great{background:#e8f9ef;color:#1a7a3a}.badge.ok{background:#f0fff0;color:#2e7d32}.badge.warn{background:#fff8e6;color:#b7600a}.badge.bad{background:#fff0f0;color:#c0392b}@page{margin:12mm}</style></head><body>'+el('pdfContent').innerHTML+'</body></html>');
+  w.document.close();w.focus();setTimeout(()=>w.print(),400);
+});
+el('downloadReportHtml').addEventListener('click',()=>{
+  const html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>旅行团损益报告</title><style>body{font:13px/1.6 system-ui,sans-serif;color:#111;background:#fff;padding:30px}table{width:100%;border-collapse:collapse;margin:8px 0}th{background:#f0f4f8;padding:6px 8px;text-align:left;border:1px solid #dde4ec}td{padding:5px 8px;border:1px solid #dde4ec}.right{text-align:right}.pos{color:#1a7a3a}.neg{color:#c0392b}h2{color:#0055aa;border-bottom:1px solid #e0e8f0;padding-bottom:4px;font-size:14px}.kpi-c{display:inline-block;width:22%;background:#f8fafc;border:1px solid #e0e8f0;border-radius:8px;padding:8px;margin:4px 1%;vertical-align:top}.kv{font-size:16px;font-weight:800;color:#0055aa}.kl{font-size:10px;color:#666}.badge{display:inline-block;padding:2px 10px;border-radius:12px;font-weight:700;font-size:11px}.badge.great{background:#e8f9ef;color:#1a7a3a}.badge.ok{background:#f0fff0;color:#2e7d32}.badge.warn{background:#fff8e6;color:#b7600a}.badge.bad{background:#fff0f0;color:#c0392b}</style></head><body>'+el('pdfContent').innerHTML+'</body></html>';
+  const blob=new Blob([html],{type:'text/html'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='旅行团损益报告_'+(el('tourName').value||'report')+'.html';a.click();
+});
+el('downloadThis').addEventListener('click',()=>{
+  const blob=new Blob(['<!DOCTYPE html>'+document.documentElement.outerHTML],{type:'text/html'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='旅行团计算器.html';a.click();
+});
+el('downloadExcel').addEventListener('click',()=>{
+  const t=calcTotals(),rc=state.reportCurrency,R=v=>fmtN(fromMYR(v,rc));
+  let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>旅行团损益表</title><style>td{text-align:right;border:1px solid #ccc;}th{background:#eee;}</style></head><body>';
+  html += '<h2>旅行团损益表 ('+rc+')</h2>';
+  html += '<table><tr><td>销售收入</td><td>'+R(t.totalRevMYR)+'</td></tr>';
+  html += '<tr><td>扣减</td><td>'+R(t.deduMYR)+'</td></tr>';
+  html += '<tr><td>成本合计</td><td>'+R(t.totalCostMYR)+'</td></tr>';
+  html += '<tr><td><b>净利润</b></td><td><b>'+R(t.profitMYR)+'</b></td></tr></table><br>';
+  html += '<h3>团员价格</h3><table><tr><th>类别</th><th>人数</th><th>单价</th><th>小计('+rc+')</th></tr>';
+  t.priceRows.forEach(r=>{html+=`<tr><td>${r.name}</td><td>${r.qty}</td><td>${fmtN(r.unit)} ${r.cur}</td><td>${R(r.subtotalMYR)}</td></tr>`;});
+  html+='</table><br><h3>其他收入</h3><table><tr><th>项目</th><th>类型</th><th>单价</th><th>数量</th><th>小计('+rc+')</th></tr>';
+  t.revRows.forEach(r=>{html+=`<tr><td>${r.name}</td><td>${typeLabel[r.type]||r.type}</td><td>${fmtN(r.unit)} ${r.cur}</td><td>${r.qty??1}</td><td>${R(r.subtotalMYR)}</td></tr>`;});
+  html+='</table><br><h3>成本明细</h3><table><tr><th>项目</th><th>类型</th><th>单价</th><th>数量</th><th>小计('+rc+')</th></tr>';
+  t.costRows.forEach(r=>{html+=`<tr><td>${r.name}</td><td>${typeLabel[r.type]||r.type}</td><td>${fmtN(r.unit)} ${r.cur}</td><td>${r.qty??1}</td><td>${R(r.subtotalMYR)}</td></tr>`;});
+  html+='</table><br><h3>退款抵减</h3><table><tr><th>项目</th><th>类型</th><th>单价</th><th>数量</th><th>小计('+rc+')</th></tr>';
+  t.refundRows.forEach(r=>{html+=`<tr><td>${r.name}</td><td>${typeLabel[r.type]||r.type}</td><td>${fmtN(r.unit)} ${r.cur}</td><td>${r.qty??1}</td><td>${R(r.subtotalMYR)}</td></tr>`;});
+  html+='</table></body></html>';
+  const blob=new Blob([html],{type:'application/vnd.ms-excel'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='旅行团损益_'+(el('tourName').value||'data')+'.xls';a.click();
+});
+el('printPage').addEventListener('click',()=>{buildPdfContent();el('pdfOverlay').classList.add('show');setTimeout(()=>{el('doPrint').click();},300);});
+el('fetchRateBtn').addEventListener('click',fetchLiveRates);
+
+// 导出备份
+el('exportBackup').addEventListener('click',()=>{
+  const data = readLS();
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '旅行团数据备份_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+});
+
+// 导入备份
+el('importBackup').addEventListener('click',()=>{
+  el('importFileInput').click();
+});
+el('importFileInput').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    try{
+      const data = JSON.parse(ev.target.result);
+      if(data.tours && Array.isArray(data.tours)){
+        writeLS(data);
+        const current = data.current || (data.tours.length ? data.tours[0].id : null);
+        if(current){
+          const t = data.tours.find(x=>x.id===current);
+          if(t) objectToPage(t);
+        }
+        refreshSelector(current);
+        alert('✅ 备份导入成功！已加载 '+data.tours.length+' 个团档案。');
+      } else {
+        alert('❌ 无效的备份文件格式');
+      }
+    }catch(ex){
+      alert('❌ 文件解析失败，请确认是JSON格式备份');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+document.querySelectorAll('.trend-metric-btn').forEach(btn=>{btn.addEventListener('click',()=>{btn.classList.toggle('active');renderTrendChart();});});
+el('refreshTrend').addEventListener('click',renderTrendChart);
+
+window.addEventListener('resize',()=>{
+  if(barChartInstance)barChartInstance.resize();
+  if(pieChartInstance)pieChartInstance.resize();
+  if(trendChartInstance)trendChartInstance.resize();
+});
+
+['myrToSgd','myrToCny','reportCurrency','commissionVal','taxPct','otherDeductions','tourName','tourCode','tourDate','returnDate'].forEach(id=>el(id).addEventListener('input',compute));
+
+(function init(){
+  const data=readLS();
+  if(data.tours.length && data.current){
+    const saved = data.tours.find(t=>t.id===data.current) || data.tours[data.tours.length-1];
+    objectToPage(saved);
+    refreshSelector(saved.id);
+  } else {
+    el('loadPriceDemo').click();
+    el('loadDemo').click();
+    el('loadRevDemo').click();
+    el('loadRefundDemo').click();
+    syncCommUI(); compute();
+    const id=genId();
+    writeLS({tours:[],current:id});
+    saveTourById(id);
+  }
+})();
+
+})();
+</script>
+</body></html>
