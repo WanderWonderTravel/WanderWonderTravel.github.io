@@ -1,4 +1,3 @@
-
 <!DOCTYPE html><html lang="zh-Hans"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -123,6 +122,16 @@ code.tag{background:#0a1322;padding:2px 6px;border-radius:6px;color:#9ac7ff;font
 .flex-wrap{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
 .spacer{flex:1}
 
+/* 类别名称列保证最小宽度，不被挤压 */
+#priceTable td:first-child,
+#costTable td:first-child,
+#revTable td:first-child,
+#refundTable td:first-child{min-width:130px}
+#priceTable td:first-child input,
+#costTable td:first-child input,
+#revTable td:first-child input,
+#refundTable td:first-child input{min-width:120px}
+
 .rate-status{font-size:11px;margin-top:4px;display:flex;align-items:center;gap:4px}
 .rate-live{color:var(--ok)}.rate-err{color:var(--bad)}.rate-loading{color:var(--warn)}
 .spin{display:inline-block;animation:spin .8s linear infinite}
@@ -169,13 +178,127 @@ code.tag{background:#0a1322;padding:2px 6px;border-radius:6px;color:#9ac7ff;font
   .desktop-cost-table{display:table!important}.cost-card-list{display:none!important}
   @page{margin:15mm}
 }
+
+/* ══ 全平台基础修复 ══════════════════════════════════ */
+/* 防止任何平台出现横向滚动条 */
+html{overflow-x:hidden}
+body{overflow-x:hidden}
+
+/* Android: 去除点击灰色闪光 */
+*{-webkit-tap-highlight-color:transparent}
+
+/* Android/所有触屏: 去除按钮 300ms 延迟 */
+button,a,select,input{touch-action:manipulation}
+
+/* ══ 平板 / 小屏笔记本 (601px–960px) ════════════════ */
+@media(min-width:601px) and (max-width:960px){
+  /* 汇总底部按钮在平板上也要换行对齐 */
+  .pill{flex-wrap:wrap;gap:6px}
+  .pill button{flex:1;min-width:calc(50% - 6px)}
+}
+
+/* ══ 手机端（iOS + Android, ≤600px）══════════════════ */
+@media(max-width:600px){
+  /* ① iOS 防止输入框自动放大（< 16px 触发缩放） */
+  /*    Android Chrome 无此问题但统一设置更好 */
+  input:not([type=hidden]),select,textarea{font-size:16px!important}
+
+  /* ② 容器缩边距 */
+  .container{padding:10px 8px}
+
+  /* ③ 防止内容宽于屏幕 */
+  .card{overflow:hidden}
+
+  /* ④ 标题字号 */
+  h1{font-size:18px}
+  h2{font-size:14px}
+
+  /* ⑤ 卡片内边距 */
+  .card{padding:12px 10px}
+
+  /* ⑥ 团档案栏：下拉菜单占满整行 */
+  .tour-mgmt{padding:8px 10px;gap:6px}
+  .tour-mgmt label{width:100%;margin-bottom:0}
+  .tour-mgmt select{min-width:100%;max-width:100%;flex:1 1 100%}
+
+  /* ⑦ 操作按钮 4个等宽一行 */
+  #saveTour,#newTour,#cloneTour,#deleteTour{
+    flex:1;min-width:0;padding:8px 2px;font-size:11px;text-align:center
+  }
+
+  /* ⑧ 云同步按钮各占一半 */
+  #cloudConfigBtn,#cloudPullBtn{flex:1;font-size:12px;padding:8px 6px}
+
+  /* ⑨ 自动保存 & 同步状态合一行 */
+  .tour-mgmt span[style*="autosave"],
+  .tour-mgmt span[style*="syncDot"]{font-size:11px}
+
+  /* ⑩ 标头 4列 → 1列 */
+  .g4{grid-template-columns:1fr!important}
+
+  /* ⑪ 行程天数输入框 */
+  .trip-days-edit input{width:56px;font-size:16px!important}
+
+  /* ⑫ 汇率输入区 3列 → 1列（已在960px变2列，手机变1列） */
+  .g3{grid-template-columns:1fr!important}
+
+  /* ⑬ KPI 值字号稍小 */
+  .kpi-box .val{font-size:16px}
+  .kpi-box{padding:10px}
+
+  /* ⑭ 每人分析确保 2列 */
+  .pp-grid{grid-template-columns:repeat(2,1fr)!important}
+
+  /* ⑮ 汇总区底部按钮：纵向排列，消除 spacer 推挤 */
+  .flex-wrap{flex-direction:column;align-items:stretch;gap:8px}
+  .flex-wrap .spacer{display:none}
+  .flex-wrap>.btn-primary,
+  .flex-wrap>.btn-ghost{width:100%;text-align:center}
+  .pill{
+    width:100%;border-radius:12px;
+    display:grid;grid-template-columns:1fr 1fr;
+    gap:6px;padding:8px;background:#0e1728;
+    border:1px solid var(--border)
+  }
+  .pill button{border-radius:8px;font-size:12px;padding:8px 4px;text-align:center}
+
+  /* ⑯ 云同步弹窗 */
+  .cloud-modal{padding:18px 14px;max-height:90vh;overflow-y:auto}
+  .cloud-modal>div:last-of-type{flex-wrap:wrap}
+  #cloudSaveConfig{flex:1 1 100%}
+  #cloudClearConfig,#cloudClose{flex:1}
+
+  /* ⑰ PDF 预览在手机上可横向滚动 */
+  .pdf-overlay{padding:10px}
+  .pdf-preview{transform-origin:top left;font-size:11px}
+
+  /* ⑱ 表格删除按钮缩小 */
+  .del-btn{min-height:32px!important;padding:5px 10px!important;font-size:12px}
+
+  /* ⑲ 最小触控目标高度（Android Material = 48dp, Apple HIG = 44pt） */
+  button:not(.del-btn){min-height:44px}
+
+  /* ⑳ 图表高度在手机上缩小 */
+  .chart-box{height:220px}
+  .trend-wrap{height:240px}
+}
+
+/* ══ 极小屏（≤360px，部分旧 Android）══════════════════ */
+@media(max-width:360px){
+  .container{padding:8px 6px}
+  h1{font-size:16px}
+  .kpi-box .val{font-size:14px}
+  #saveTour,#newTour,#cloneTour,#deleteTour{font-size:10px;padding:6px 1px}
+  .pill{grid-template-columns:1fr}
+}
+/* ═══════════════════════════════════════════════════ */
 </style>
 </head>
 <body>
 <div class="container">
 <div class="tour-mgmt no-print">
   <label>📁 团档案：</label>
-  <select id="tourSelector"><option value="mov8jks4qxdw">6D5N 上海桐庐之旅 · 2026-03-23</option></select>
+  <select id="tourSelector"><option value="mod3cxdlsb3g">6D5N 上海桐庐之旅（建筑公司） · 2026-03-23</option><option value="mod3fsha53kw">8D7N 浙江之旅 8人 · 2026-03-18</option><option value="mod3q1fnx189">11D10N 重庆成都之旅 （教会） · 2026-03-18</option><option value="mod43lajghby">8D7N 张家界之旅 · 2026-04-09</option><option value="mod46y2hinjb">10D9N 浙江之旅 （玲姐） · 2026-04-11</option><option value="mod6566s4twy">4.10-12 日广州租车三天 · 2026-04-10</option></select>
   <button class="btn-ok" id="saveTour">💾 保存</button>
   <button class="btn-accent" id="newTour">➕ 新建</button>
   <button class="btn-warn" id="cloneTour">📋 复制</button>
@@ -184,7 +307,7 @@ code.tag{background:#0a1322;padding:2px 6px;border-radius:6px;color:#9ac7ff;font
     <span class="autosave-dot"></span>自动保存
   </span>
   <span style="margin-left:8px;display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)">
-    <span class="sync-dot" id="syncDot" style="background: rgb(46, 204, 113);"></span><span id="syncTxt">✅ 已同步 16:42:05</span>
+    <span class="sync-dot" id="syncDot" style="background: rgb(46, 204, 113);"></span><span id="syncTxt">✅ 已同步 7:29:46 PM</span>
   </span>
   <button class="btn-accent no-print" id="cloudConfigBtn" style="margin-left:4px">☁️ 云同步设置</button>
   <button class="btn-ok no-print" id="cloudPullBtn" style="">🔄 拉取最新</button>
@@ -214,7 +337,7 @@ code.tag{background:#0a1322;padding:2px 6px;border-radius:6px;color:#9ac7ff;font
     <h2 style="margin:0">👥 团员价格（可添加老人/分批）</h2>
     <div class="row no-print" style="gap:6px;width:auto;flex-wrap:wrap"><button class="btn-ghost" id="addPriceItem">＋ 添加价格组</button><button class="btn-warn" id="loadPriceDemo">载入示例</button><button class="btn-bad" id="clearPrice">清空</button></div>
   </div>
-  <div style="overflow:auto"><table id="priceTable"><thead><tr><th>类别名称</th><th>人数</th><th>单价</th><th>币种</th><th class="right">小计</th><th class="no-print">操作</th></tr></thead><tbody id="priceTbody"><tr><td><input value="成人"></td><td><input type="number" min="0" value="20" style="width:80px"></td><td><input type="number" step="0.01" value="2400" style="width:100px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td class="right subtotal">RM 48,000.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="儿童"></td><td><input type="number" min="0" value="5" style="width:80px"></td><td><input type="number" step="0.01" value="1000" style="width:100px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td class="right subtotal">RM 5,000.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="老人"></td><td><input type="number" min="0" value="4" style="width:80px"></td><td><input type="number" step="0.01" value="1800" style="width:100px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td class="right subtotal">RM 7,200.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="第二批成人"></td><td><input type="number" min="0" value="10" style="width:80px"></td><td><input type="number" step="0.01" value="2500" style="width:100px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td class="right subtotal">RM 25,000.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr></tbody><tfoot><tr><td colspan="4" class="right">总人数 / 销售收入</td><td class="right" id="priceTotal">39 人 / RM 85,200.00</td><td class="no-print"></td></tr></tfoot></table></div>
+  <div style="overflow:auto"><table id="priceTable"><thead><tr><th>类别名称</th><th>人数</th><th>单价</th><th>币种</th><th class="right">小计</th><th class="no-print">操作</th></tr></thead><tbody id="priceTbody"><tr><td><input value="成人"></td><td><input type="number" min="0" value="21" style="width:80px"></td><td><input type="number" step="0.01" value="2788" style="width:100px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td class="right subtotal">RM 58,548.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="领队小红"></td><td><input type="number" min="0" value="1" style="width:80px"></td><td><input type="number" step="0.01" value="0" style="width:100px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td class="right subtotal">RM 0.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr></tbody><tfoot><tr><td colspan="4" class="right">总人数 / 销售收入</td><td class="right" id="priceTotal">22 人 / RM 58,548.00</td><td class="no-print"></td></tr></tfoot></table></div>
   <div class="grid g4" style="margin-top:10px">
     <div><label>佣金方式</label><select id="commissionType"><option value="pct">按销售额 %</option><option value="perHead">按人头（报表币/人）</option></select></div>
     <div><label id="commissionLabel">佣金值（%）</label><input id="commissionVal" type="number" min="0" step="0.01"><div class="hint" id="commissionHint">例如 3 = 销售额的 3%</div></div>
@@ -225,18 +348,18 @@ code.tag{background:#0a1322;padding:2px 6px;border-radius:6px;color:#9ac7ff;font
 
 <section class="card">
   <div class="row" style="flex-wrap:wrap;gap:8px;justify-content:space-between"><h2 style="margin:0">其他收入明细</h2><div class="row no-print" style="gap:6px;width:auto;flex-wrap:wrap"><button class="btn-ghost" id="addRev">＋ 添加</button><button class="btn-warn" id="loadRevDemo">载入示例</button><button class="btn-bad" id="clearRev">清空</button></div></div>
-  <div style="overflow:auto"><table id="revTable"><thead><tr><th>项目</th><th>类型</th><th>单价</th><th>币种</th><th>数量</th><th class="right">小计</th><th class="no-print">操作</th></tr></thead><tbody id="revTbody"><tr><td><input value="单房差"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="800"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="3"></td><td class="right subtotal">RM 2,400.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr></tbody><tfoot><tr><td colspan="5" class="right">其他收入合计</td><td class="right" id="revExtraTotal">RM 2,400.00</td><td class="no-print"></td></tr></tfoot></table></div>
+  <div style="overflow:auto"><table id="revTable"><thead><tr><th>项目</th><th>类型</th><th>单价</th><th>币种</th><th>数量</th><th class="right">小计</th><th class="no-print">操作</th></tr></thead><tbody id="revTbody"><tr><td><input value="领队小费"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="1000"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value=""></td><td class="right subtotal">RM 581.40</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr></tbody><tfoot><tr><td colspan="5" class="right">其他收入合计</td><td class="right" id="revExtraTotal">RM 581.40</td><td class="no-print"></td></tr></tfoot></table></div>
 </section>
 
 <section class="card">
   <div class="row" style="flex-wrap:wrap;gap:8px;justify-content:space-between"><h2 style="margin:0">成本明细</h2><div class="row no-print" style="gap:6px;width:auto;flex-wrap:wrap"><button class="btn-ghost" id="addCost">＋ 添加</button><button class="btn-warn" id="loadDemo">载入示例</button><button class="btn-bad" id="clearAll">清空全部</button></div></div>
-  <div style="overflow:auto" class="desktop-cost-table"><table id="costTable"><thead><tr><th>项目</th><th>类型</th><th>单价</th><th>币种</th><th>数量</th><th class="right">小计</th><th class="no-print">操作</th></tr></thead><tbody id="costTbody"><tr><td><input value="地接款"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="56116" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 32,625.58</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="酒店"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="5000" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 2,906.98</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="交通"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="12117" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 7,044.77</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="门票"></td><td><select><option value="fixed">固定</option><option value="perAll" selected="">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="60" style="min-width:70px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 2,340.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr></tbody><tfoot><tr><td colspan="5" class="right">成本合计</td><td class="right" id="costTotal">RM 44,917.33</td><td class="no-print"></td></tr></tfoot></table></div>
-  <div class="cost-card-list" id="costCardList"><div class="cost-card"><div class="cost-card-header"><span class="cost-card-title" style="color:#94a3b8">📌 其他</span><span class="cost-card-subtotal">RM 32,625.58</span></div><div class="cost-card-grid"><div><label>地接款</label><span style="color:var(--text);font-weight:600">RM 32,625.58</span></div></div></div><div class="cost-card"><div class="cost-card-header"><span class="cost-card-title" style="color:#a78bfa">📌 住宿</span><span class="cost-card-subtotal">RM 2,906.98</span></div><div class="cost-card-grid"><div><label>酒店</label><span style="color:var(--text);font-weight:600">RM 2,906.98</span></div></div></div><div class="cost-card"><div class="cost-card-header"><span class="cost-card-title" style="color:#5cc8ff">📌 交通</span><span class="cost-card-subtotal">RM 7,044.77</span></div><div class="cost-card-grid"><div><label>交通</label><span style="color:var(--text);font-weight:600">RM 7,044.77</span></div></div></div><div class="cost-card"><div class="cost-card-header"><span class="cost-card-title" style="color:#34d399">📌 门票</span><span class="cost-card-subtotal">RM 2,340.00</span></div><div class="cost-card-grid"><div><label>门票</label><span style="color:var(--text);font-weight:600">RM 2,340.00</span></div></div></div></div>
+  <div style="overflow:auto" class="desktop-cost-table"><table id="costTable"><thead><tr><th>项目</th><th>类型</th><th>单价</th><th>币种</th><th>数量</th><th class="right">小计</th><th class="no-print">操作</th></tr></thead><tbody id="costTbody"><tr><td><input value="地接款"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="17000" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 9,883.72</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="玲姐车费"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="440" style="min-width:70px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 440.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="小红回程出租车"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="100" style="min-width:70px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 100.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="小红飞机票"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="3425" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 1,991.28</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="保险"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="1081" style="min-width:70px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 1,081.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="司机补餐"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="510" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 296.51</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="大巴车费"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="10800" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 6,279.07</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="导游费"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="2200" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 1,279.07</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="酒店支付"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="9020" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 5,244.19</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="杯子定制"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="26" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="21" style="min-width:50px"></td><td class="right subtotal">RM 317.44</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="浙江定金"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="1500" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 872.09</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="杭州远景"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="5000" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 2,906.98</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="支付给晓琴"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="5106.2" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 2,968.72</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="地接尾款"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="6379" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 3,708.72</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="银行手续费"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="38.38" style="min-width:70px"></td><td><select><option value="MYR">RM</option><option value="SGD">SGD</option><option value="CNY" selected="">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 22.31</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr></tbody><tfoot><tr><td colspan="5" class="right">成本合计</td><td class="right" id="costTotal">RM 37,391.10</td><td class="no-print"></td></tr></tfoot></table></div>
+  <div class="cost-card-list" id="costCardList"><div class="cost-card"><div class="cost-card-header"><span class="cost-card-title" style="color:#94a3b8">📌 其他</span><span class="cost-card-subtotal">RM 20,679.99</span></div><div class="cost-card-grid"><div><label>地接款</label><span style="color:var(--text);font-weight:600">RM 9,883.72</span></div><div><label>杯子定制</label><span style="color:var(--text);font-weight:600">RM 317.44</span></div><div><label>浙江定金</label><span style="color:var(--text);font-weight:600">RM 872.09</span></div><div><label>杭州远景</label><span style="color:var(--text);font-weight:600">RM 2,906.98</span></div><div><label>支付给晓琴</label><span style="color:var(--text);font-weight:600">RM 2,968.72</span></div><div><label>地接尾款</label><span style="color:var(--text);font-weight:600">RM 3,708.72</span></div><div><label>银行手续费</label><span style="color:var(--text);font-weight:600">RM 22.31</span></div></div></div><div class="cost-card"><div class="cost-card-header"><span class="cost-card-title" style="color:#5cc8ff">📌 交通</span><span class="cost-card-subtotal">RM 8,810.35</span></div><div class="cost-card-grid"><div><label>玲姐车费</label><span style="color:var(--text);font-weight:600">RM 440.00</span></div><div><label>小红回程出租车</label><span style="color:var(--text);font-weight:600">RM 100.00</span></div><div><label>小红飞机票</label><span style="color:var(--text);font-weight:600">RM 1,991.28</span></div><div><label>大巴车费</label><span style="color:var(--text);font-weight:600">RM 6,279.07</span></div></div></div><div class="cost-card"><div class="cost-card-header"><span class="cost-card-title" style="color:#facc15">📌 保险</span><span class="cost-card-subtotal">RM 1,081.00</span></div><div class="cost-card-grid"><div><label>保险</label><span style="color:var(--text);font-weight:600">RM 1,081.00</span></div></div></div><div class="cost-card"><div class="cost-card-header"><span class="cost-card-title" style="color:#fb923c">📌 餐饮</span><span class="cost-card-subtotal">RM 296.51</span></div><div class="cost-card-grid"><div><label>司机补餐</label><span style="color:var(--text);font-weight:600">RM 296.51</span></div></div></div><div class="cost-card"><div class="cost-card-header"><span class="cost-card-title" style="color:#f472b6">📌 导游</span><span class="cost-card-subtotal">RM 1,279.07</span></div><div class="cost-card-grid"><div><label>导游费</label><span style="color:var(--text);font-weight:600">RM 1,279.07</span></div></div></div><div class="cost-card"><div class="cost-card-header"><span class="cost-card-title" style="color:#a78bfa">📌 住宿</span><span class="cost-card-subtotal">RM 5,244.19</span></div><div class="cost-card-grid"><div><label>酒店支付</label><span style="color:var(--text);font-weight:600">RM 5,244.19</span></div></div></div></div>
 </section>
 
 <section class="card">
   <div class="row" style="flex-wrap:wrap;gap:8px;justify-content:space-between"><h2 style="margin:0">退票 / 退款 / 取消团费</h2><div class="row no-print" style="gap:6px;width:auto;flex-wrap:wrap"><button class="btn-ghost" id="addRefund">＋ 添加</button><button class="btn-warn" id="loadRefundDemo">载入示例</button><button class="btn-bad" id="clearRefund">清空</button></div></div>
-  <div style="overflow:auto"><table id="refundTable"><thead><tr><th>项目</th><th>类型</th><th>单价</th><th>币种</th><th>数量</th><th class="right">小计</th><th class="no-print">操作</th></tr></thead><tbody id="refundTbody"><tr><td><input value="机票退票"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="500" style="min-width:70px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 500.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr></tbody><tfoot><tr><td colspan="5" class="right">退款抵减合计</td><td class="right" id="refundTotal">RM 500.00</td><td class="no-print"></td></tr></tfoot></table></div>
+  <div style="overflow:auto"><table id="refundTable"><thead><tr><th>项目</th><th>类型</th><th>单价</th><th>币种</th><th>数量</th><th class="right">小计</th><th class="no-print">操作</th></tr></thead><tbody id="refundTbody"><tr><td><input value="少收费用"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="4" style="min-width:70px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 4.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr><tr><td><input value="退保险费"></td><td><select><option value="fixed" selected="">固定</option><option value="perAll">按人</option><option value="perAdult">仅成人</option><option value="perChild">仅儿童</option></select></td><td><input type="number" step="0.01" value="150" style="min-width:70px"></td><td><select><option value="MYR" selected="">RM</option><option value="SGD">SGD</option><option value="CNY">RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="" style="min-width:50px"></td><td class="right subtotal">RM 150.00</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td></tr></tbody><tfoot><tr><td colspan="5" class="right">退款抵减合计</td><td class="right" id="refundTotal">RM 154.00</td><td class="no-print"></td></tr></tfoot></table></div>
 </section>
 
 <section class="card"><h2>可视化图表 <span class="toggle-btn no-print" id="toggleCharts">展开 ▼</span></h2><div class="collapsible collapsed" id="chartsBody" style="max-height:0;overflow:hidden"><div class="charts-wrap"><div class="chart-box"><h3>💰 收入 / 成本 / 利润</h3><canvas id="barChart"></canvas></div><div class="chart-box"><h3>🗂 成本分类占比</h3><canvas id="pieChart"></canvas><div id="pieLegend" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:10px;font-size:11px"></div></div></div></div></section>
@@ -245,14 +368,14 @@ code.tag{background:#0a1322;padding:2px 6px;border-radius:6px;color:#9ac7ff;font
 
 <section class="card">
   <h2>汇总</h2>
-  <div class="kpi"><div class="kpi-box"><div class="muted">销售收入</div><div class="val" id="revenueTotal">RM 87,600.00</div><div class="hint" id="revenueBreak">基础 RM 85,200.00 + 其他 RM 2,400.00</div></div><div class="kpi-box"><div class="muted">扣减</div><div class="val" id="deductions">RM 3,000.00</div><div class="hint" id="deductionsBreak">佣金 RM 0.00 + 税 RM 0.00 + 其他 RM 3,000.00</div></div><div class="kpi-box"><div class="muted">成本合计</div><div class="val" id="costs">RM 44,417.33</div><div class="hint" id="costsBreak">固定 RM 42,577.33 + 变动 RM 2,340.00 − 退款 RM 500.00</div></div><div class="kpi-box profit-great" id="profitBox"><div class="muted">净利润</div><div class="val" id="profit"><span class="pos">RM 40,182.67</span></div><div id="marginBadgeWrap"><div class="margin-badge great">🟢 45.87%・利润良好</div></div></div></div>
+  <div class="kpi"><div class="kpi-box"><div class="muted">销售收入</div><div class="val" id="revenueTotal">RM 59,129.40</div><div class="hint" id="revenueBreak">基础 RM 58,548.00 + 其他 RM 581.40</div></div><div class="kpi-box"><div class="muted">扣减</div><div class="val" id="deductions">RM 2,000.00</div><div class="hint" id="deductionsBreak">佣金 RM 0.00 + 税 RM 0.00 + 其他 RM 2,000.00</div></div><div class="kpi-box"><div class="muted">成本合计</div><div class="val" id="costs">RM 37,237.10</div><div class="hint" id="costsBreak">固定 RM 37,391.10 + 变动 RM 0.00 − 退款 RM 154.00</div></div><div class="kpi-box profit-great" id="profitBox"><div class="muted">净利润</div><div class="val" id="profit"><span class="pos">RM 19,892.29</span></div><div id="marginBadgeWrap"><div class="margin-badge great">🟢 33.64%・利润良好</div></div></div></div>
   <div class="perpax-bar">
     <h3>👤 每人分析</h3>
     <div class="pp-grid">
-      <div class="pp-item"><div class="pp-lbl">人均收入</div><div class="pp-val" id="perPaxRevenue">RM 2,246.15</div></div>
-      <div class="pp-item"><div class="pp-lbl">人均成本</div><div class="pp-val" id="perPaxCost">RM 1,138.91</div></div>
-      <div class="pp-item"><div class="pp-lbl">人均利润</div><div class="pp-val" id="perPaxProfit"><span class="pos">RM 1,030.32</span></div></div>
-      <div class="pp-item"><div class="pp-lbl">利润率</div><div class="pp-val" id="perPaxMargin"><span class="pos">45.87%</span></div></div>
+      <div class="pp-item"><div class="pp-lbl">人均收入</div><div class="pp-val" id="perPaxRevenue">RM 2,687.70</div></div>
+      <div class="pp-item"><div class="pp-lbl">人均成本</div><div class="pp-val" id="perPaxCost">RM 1,692.60</div></div>
+      <div class="pp-item"><div class="pp-lbl">人均利润</div><div class="pp-val" id="perPaxProfit"><span class="pos">RM 904.20</span></div></div>
+      <div class="pp-item"><div class="pp-lbl">利润率</div><div class="pp-val" id="perPaxMargin"><span class="pos">33.64%</span></div></div>
     </div>
   </div>
   <div class="flex-wrap no-print" style="margin-top:14px">
@@ -296,7 +419,7 @@ code.tag{background:#0a1322;padding:2px 6px;border-radius:6px;color:#9ac7ff;font
       <button class="btn-ghost" id="cloudClearConfig">🗑 清除</button>
       <button class="btn-bad" id="cloudClose">✕ 关闭</button>
     </div>
-    <div id="cloudTestResult" style="margin-top:10px;font-size:12px;min-height:18px"><span style="color:#2ecc71">✅ 连接成功！本地数据已上传。</span></div>
+    <div id="cloudTestResult" style="margin-top:10px;font-size:12px;min-height:18px"><span style="color:#2ecc71">✅ 已拉取 6 个团档案！</span></div>
   </div>
 </div>
 
@@ -325,21 +448,50 @@ const fromMYR=(m,t)=>{if(t==='MYR')return m;if(t==='SGD')return state.myrToSgd?m
 const syncRates=()=>{ state.myrToSgd=+el('myrToSgd').value||0; state.myrToCny=+el('myrToCny').value||0; state.reportCurrency=el('reportCurrency').value; el('myrToSgdView').textContent=state.myrToSgd.toFixed(4); el('myrToCnyView').textContent=state.myrToCny.toFixed(4); };
 
 async function fetchLiveRates(){
-  el('rateLastUpdate').innerHTML='<span class="rate-loading"><span class="spin">⏳</span> 获取中...</span>';
-  try{
-    const res=await fetch('https://api.frankfurter.app/latest?from=MYR&to=SGD,CNY');
-    if(res.ok){
-      const data=await res.json();
-      el('myrToSgd').value=data.rates.SGD.toFixed(4);
-      el('myrToCny').value=data.rates.CNY.toFixed(4);
+  el('rateLastUpdate').innerHTML='<span class="rate-loading"><span class="spin">⏳</span> 获取汇率中...</span>';
+
+  // 三个备用汇率源，依次尝试
+  const sources = [
+    {
+      name:'open.er-api',
+      fn: async ()=>{
+        const r=await fetch('https://open.er-api.com/v6/latest/MYR');
+        const d=await r.json();
+        if(!r.ok||d.result==='error')throw new Error();
+        return{SGD:d.rates.SGD, CNY:d.rates.CNY};
+      }
+    },
+    {
+      name:'fawazahmed0-CDN',
+      fn: async ()=>{
+        const r=await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/myr.json');
+        const d=await r.json();
+        if(!r.ok)throw new Error();
+        return{SGD:d.myr.sgd, CNY:d.myr.cny};
+      }
+    },
+    {
+      name:'frankfurter',
+      fn: async ()=>{
+        const r=await fetch('https://api.frankfurter.app/latest?from=MYR&to=SGD,CNY');
+        const d=await r.json();
+        if(!r.ok)throw new Error();
+        return{SGD:d.rates.SGD, CNY:d.rates.CNY};
+      }
+    }
+  ];
+
+  for(const src of sources){
+    try{
+      const rates=await src.fn();
+      el('myrToSgd').value=rates.SGD.toFixed(4);
+      el('myrToCny').value=rates.CNY.toFixed(4);
       el('rateLastUpdate').innerHTML='<span class="rate-live">✅ 汇率已更新 '+(new Date()).toLocaleTimeString()+'</span>';
       compute();
-    }else{
-      el('rateLastUpdate').innerHTML='<span class="rate-err">❌ API 错误</span>';
-    }
-  }catch(e){
-    el('rateLastUpdate').innerHTML='<span class="rate-err">❌ 网络错误，请稍后重试</span>';
+      return;
+    }catch(e){ /* 尝试下一个 */ }
   }
+  el('rateLastUpdate').innerHTML='<span class="rate-err">❌ 所有汇率源不可用，请手动输入</span>';
 }
 
 function validateDates(){const d1=el('tourDate').value,d2=el('returnDate').value;const bad=d1&&d2&&new Date(d2)<=new Date(d1);el('dateError').classList.toggle('show',!!bad);return!bad;}
@@ -370,25 +522,25 @@ const syncCommUI=()=>{const p=el('commissionType').value==='pct';el('commissionL
 el('commissionType').addEventListener('change',()=>{syncCommUI();compute();});
 
 const priceTbody=el('priceTbody');
-function buildPriceRow(row={}){const {name='',qty=0,unit=0,cur='MYR'}=row;const tr=document.createElement('tr');tr.innerHTML=`<td><input value="${name}"></td><td><input type="number" min="0" value="${qty}" style="width:80px"></td><td><input type="number" step="0.01" value="${unit}" style="width:100px"></td><td><select><option value="MYR" ${cur==='MYR'?'selected':''}>RM</option><option value="SGD" ${cur==='SGD'?'selected':''}>SGD</option><option value="CNY" ${cur==='CNY'?'selected':''}>RMB</option></select></td><td class="right subtotal">—</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td>`;priceTbody.appendChild(tr);tr.querySelector('.del-btn').addEventListener('click',()=>{tr.remove();compute();});tr.querySelectorAll('input,select').forEach(i=>i.addEventListener('input',compute));}
+function buildPriceRow(row={}){const {name='',qty=0,unit=0,cur='MYR'}=row;const tr=document.createElement('tr');tr.innerHTML=`<td><input value="${name}" style="min-width:120px"></td><td><input type="number" min="0" value="${qty}" style="width:80px"></td><td><input type="number" step="0.01" value="${unit}" style="width:100px"></td><td><select><option value="MYR" ${cur==='MYR'?'selected':''}>RM</option><option value="SGD" ${cur==='SGD'?'selected':''}>SGD</option><option value="CNY" ${cur==='CNY'?'selected':''}>RMB</option></select></td><td class="right subtotal">—</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td>`;priceTbody.appendChild(tr);tr.querySelector('.del-btn').addEventListener('click',()=>{tr.remove();compute();});tr.querySelectorAll('input,select').forEach(i=>i.addEventListener('input',compute));}
 el('addPriceItem').addEventListener('click',()=>buildPriceRow());
 el('loadPriceDemo').addEventListener('click',()=>{priceTbody.innerHTML='';[{name:'成人',qty:20,unit:2400,cur:'MYR'},{name:'儿童',qty:5,unit:1000,cur:'MYR'},{name:'老人',qty:4,unit:1800,cur:'MYR'},{name:'第二批成人',qty:10,unit:2500,cur:'MYR'}].forEach(buildPriceRow);compute();});
 el('clearPrice').addEventListener('click',()=>{priceTbody.innerHTML='';compute();});
 
 const costTbody2=el('costTbody'),costCardList=el('costCardList');
-function buildCostRow(row={}){const {name='',type='fixed',unit=0,cur='MYR',qty=''}=row;const tr=document.createElement('tr');tr.innerHTML=`<td><input value="${name}"></td><td><select>${Object.entries(typeLabel).map(([v,l])=>`<option value="${v}"${v===type?' selected':''}>${l}</option>`).join('')}</select></td><td><input type="number" step="0.01" value="${unit}" style="min-width:70px"></td><td><select><option value="MYR"${cur==='MYR'?' selected':''}>RM</option><option value="SGD"${cur==='SGD'?' selected':''}>SGD</option><option value="CNY"${cur==='CNY'?' selected':''}>RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="${qty}" style="min-width:50px"></td><td class="right subtotal">—</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td>`;costTbody2.appendChild(tr);tr.querySelector('.del-btn').addEventListener('click',()=>{tr.remove();compute();});tr.querySelectorAll('input,select').forEach(i=>i.addEventListener('input',compute));}
+function buildCostRow(row={}){const {name='',type='fixed',unit=0,cur='MYR',qty=''}=row;const tr=document.createElement('tr');tr.innerHTML=`<td><input value="${name}" style="min-width:120px"></td><td><select>${Object.entries(typeLabel).map(([v,l])=>`<option value="${v}"${v===type?' selected':''}>${l}</option>`).join('')}</select></td><td><input type="number" step="0.01" value="${unit}" style="min-width:70px"></td><td><select><option value="MYR"${cur==='MYR'?' selected':''}>RM</option><option value="SGD"${cur==='SGD'?' selected':''}>SGD</option><option value="CNY"${cur==='CNY'?' selected':''}>RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="${qty}" style="min-width:50px"></td><td class="right subtotal">—</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td>`;costTbody2.appendChild(tr);tr.querySelector('.del-btn').addEventListener('click',()=>{tr.remove();compute();});tr.querySelectorAll('input,select').forEach(i=>i.addEventListener('input',compute));}
 el('addCost').addEventListener('click',()=>buildCostRow());
 el('loadDemo').addEventListener('click',()=>{costTbody2.innerHTML='';[{name:'地接款',type:'fixed',unit:56116,cur:'CNY'},{name:'酒店',type:'fixed',unit:5000,cur:'CNY'},{name:'交通',type:'fixed',unit:12117,cur:'CNY'},{name:'门票',type:'perAll',unit:60,cur:'MYR'}].forEach(buildCostRow);compute();});
 el('clearAll').addEventListener('click',()=>{if(!confirm('清空全部？'))return;costTbody2.innerHTML='';revTbody.innerHTML='';refundTbody.innerHTML='';compute();});
 
 const refundTbody=el('refundTbody');
-function buildRefundRow(row={}){const {name='',type='fixed',unit=0,cur='MYR',qty=''}=row;const tr=document.createElement('tr');tr.innerHTML=`<td><input value="${name}"></td><td><select>${Object.entries(typeLabel).map(([v,l])=>`<option value="${v}"${v===type?' selected':''}>${l}</option>`).join('')}</select></td><td><input type="number" step="0.01" value="${unit}" style="min-width:70px"></td><td><select><option value="MYR"${cur==='MYR'?' selected':''}>RM</option><option value="SGD"${cur==='SGD'?' selected':''}>SGD</option><option value="CNY"${cur==='CNY'?' selected':''}>RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="${qty}" style="min-width:50px"></td><td class="right subtotal">—</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td>`;refundTbody.appendChild(tr);tr.querySelector('.del-btn').addEventListener('click',()=>{tr.remove();compute();});tr.querySelectorAll('input,select').forEach(i=>i.addEventListener('input',compute));}
+function buildRefundRow(row={}){const {name='',type='fixed',unit=0,cur='MYR',qty=''}=row;const tr=document.createElement('tr');tr.innerHTML=`<td><input value="${name}" style="min-width:120px"></td><td><select>${Object.entries(typeLabel).map(([v,l])=>`<option value="${v}"${v===type?' selected':''}>${l}</option>`).join('')}</select></td><td><input type="number" step="0.01" value="${unit}" style="min-width:70px"></td><td><select><option value="MYR"${cur==='MYR'?' selected':''}>RM</option><option value="SGD"${cur==='SGD'?' selected':''}>SGD</option><option value="CNY"${cur==='CNY'?' selected':''}>RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="${qty}" style="min-width:50px"></td><td class="right subtotal">—</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td>`;refundTbody.appendChild(tr);tr.querySelector('.del-btn').addEventListener('click',()=>{tr.remove();compute();});tr.querySelectorAll('input,select').forEach(i=>i.addEventListener('input',compute));}
 el('addRefund').addEventListener('click',()=>buildRefundRow());
 el('loadRefundDemo').addEventListener('click',()=>{refundTbody.innerHTML='';[{name:'机票退票',type:'fixed',unit:500,cur:'MYR'}].forEach(buildRefundRow);compute();});
 el('clearRefund').addEventListener('click',()=>{refundTbody.innerHTML='';compute();});
 
 const revTbody=el('revTbody');
-function buildRevRow(row={}){const {name='',type='perAll',unit=0,cur='MYR',qty=''}=row;const tr=document.createElement('tr');tr.innerHTML=`<td><input value="${name}"></td><td><select>${Object.entries(typeLabel).map(([v,l])=>`<option value="${v}"${v===type?' selected':''}>${l}</option>`).join('')}</select></td><td><input type="number" step="0.01" value="${unit}"></td><td><select><option value="MYR"${cur==='MYR'?' selected':''}>RM</option><option value="SGD"${cur==='SGD'?' selected':''}>SGD</option><option value="CNY"${cur==='CNY'?' selected':''}>RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="${qty}"></td><td class="right subtotal">—</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td>`;revTbody.appendChild(tr);tr.querySelector('.del-btn').addEventListener('click',()=>{tr.remove();compute();});tr.querySelectorAll('input,select').forEach(i=>i.addEventListener('input',compute));}
+function buildRevRow(row={}){const {name='',type='perAll',unit=0,cur='MYR',qty=''}=row;const tr=document.createElement('tr');tr.innerHTML=`<td><input value="${name}" style="min-width:120px"></td><td><select>${Object.entries(typeLabel).map(([v,l])=>`<option value="${v}"${v===type?' selected':''}>${l}</option>`).join('')}</select></td><td><input type="number" step="0.01" value="${unit}"></td><td><select><option value="MYR"${cur==='MYR'?' selected':''}>RM</option><option value="SGD"${cur==='SGD'?' selected':''}>SGD</option><option value="CNY"${cur==='CNY'?' selected':''}>RMB</option></select></td><td><input type="number" step="0.01" placeholder="1" value="${qty}"></td><td class="right subtotal">—</td><td class="no-print"><button class="btn-bad del-btn">✕</button></td>`;revTbody.appendChild(tr);tr.querySelector('.del-btn').addEventListener('click',()=>{tr.remove();compute();});tr.querySelectorAll('input,select').forEach(i=>i.addEventListener('input',compute));}
 el('addRev').addEventListener('click',()=>buildRevRow());
 el('loadRevDemo').addEventListener('click',()=>{revTbody.innerHTML='';[{name:'单房差',type:'fixed',unit:800,cur:'MYR',qty:3}].forEach(buildRevRow);compute();});
 el('clearRev').addEventListener('click',()=>{revTbody.innerHTML='';compute();});
@@ -779,6 +931,8 @@ function pageToObject(){
   return{
     tourName:el('tourName').value, tourCode:el('tourCode').value,
     tourDate:el('tourDate').value, returnDate:el('returnDate').value,
+    tripDays:el('tripDaysInput').value, tripNights:el('tripNightsInput').value,
+    tripManualMode:tripManualMode,
     reportCurrency:el('reportCurrency').value, myrToSgd:el('myrToSgd').value, myrToCny:el('myrToCny').value,
     commissionType:el('commissionType').value, commissionVal:el('commissionVal').value,
     taxPct:el('taxPct').value, otherDeductions:el('otherDeductions').value,
@@ -795,11 +949,19 @@ function objectToPage(obj){
   set('myrToSgd',obj.myrToSgd||0.2899); set('myrToCny',obj.myrToCny||1.72);
   set('commissionType',obj.commissionType||'pct'); set('commissionVal',obj.commissionVal||'');
   set('taxPct',obj.taxPct||0); set('otherDeductions',obj.otherDeductions||0);
+  tripManualMode = obj.tripManualMode || false;
+  if(tripManualMode && obj.tripDays){
+    el('tripDaysInput').value = obj.tripDays;
+    el('tripNightsInput').value = obj.tripNights||'';
+  } else {
+    tripManualMode = false;
+    syncDurationBadge();
+  }
   priceTbody.innerHTML=''; (obj.priceRows||[]).forEach(r=>buildPriceRow(r));
   costTbody2.innerHTML=''; (obj.costRows||[]).forEach(r=>buildCostRow(r));
   refundTbody.innerHTML=''; (obj.refundRows||[]).forEach(r=>buildRefundRow(r));
   revTbody.innerHTML=''; (obj.revRows||[]).forEach(r=>buildRevRow(r));
-  syncCommUI(); tripManualMode=false; syncDurationBadge(); compute();
+  syncCommUI(); syncDurationBadge(); compute();
 }
 
 function refreshSelector(id){
@@ -1059,4 +1221,5 @@ el('cloudPullBtn').addEventListener('click',async()=>{
 
 })();
 </script>
+
 </body></html>
