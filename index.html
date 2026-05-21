@@ -1480,10 +1480,31 @@ function compute(){
 
 const LS_KEY='tourCalcPro_v7';
 const CLOUD_CFG_KEY='tourCalc_cloudCfg';
+const BACKUP_KEY='tourCalcPro_v7_backups';
+const CLOUD_SOFT_LIMIT_BYTES=95*1024;
 const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const readLS=()=>{try{return JSON.parse(localStorage.getItem(LS_KEY))||{tours:[],current:null};}catch(e){return{tours:[],current:null};}};
 const _writeLSOnly=d=>localStorage.setItem(LS_KEY,JSON.stringify(d));
-const writeLS=d=>{_writeLSOnly(d);cloudPush(d);};
+let cloudPushTimer=null,latestCloudData=null,cloudPushQueue=Promise.resolve();
+function isValidTourData(data){return !!(data&&Array.isArray(data.tours)&&data.tours.length>0);}
+function dataBytes(data){try{return new Blob([JSON.stringify(data)]).size;}catch(e){return JSON.stringify(data||{}).length;}}
+function saveLocalSnapshot(label,data=readLS()){
+  if(!isValidTourData(data))return;
+  try{
+    const list=JSON.parse(localStorage.getItem(BACKUP_KEY)||'[]');
+    list.unshift({at:new Date().toISOString(),label:label||'backup',data});
+    localStorage.setItem(BACKUP_KEY,JSON.stringify(list.slice(0,12)));
+  }catch(e){}
+}
+function scheduleCloudPush(data){
+  latestCloudData=data;
+  clearTimeout(cloudPushTimer);
+  cloudPushTimer=setTimeout(()=>{
+    const dataToPush=latestCloudData;
+    cloudPushQueue=cloudPushQueue.catch(()=>{}).then(()=>cloudPush(dataToPush));
+  },900);
+}
+const writeLS=d=>{_writeLSOnly(d);scheduleCloudPush(d);};
 
 // ── Cloud sync helpers ────────────────────────────────────────────────
 function getCloudCfg(){try{return JSON.parse(localStorage.getItem(CLOUD_CFG_KEY))||{};}catch(e){return{};}}
@@ -1499,6 +1520,8 @@ function setSyncStatus(status,msg){
 }
 async function cloudPush(data){
   const cfg=getCloudCfg();if(!cfg.binId||!cfg.apiKey)return;
+  if(!isValidTourData(data)){setSyncStatus('ok','本机已保存，空资料未上传');return;}
+  if(dataBytes(data)>CLOUD_SOFT_LIMIT_BYTES){setSyncStatus('error','资料太大，未上传云端，请导出备份');return;}
   setSyncStatus('loading','上传中...');
   try{
     const res=await fetch(`https://api.jsonbin.io/v3/b/${cfg.binId}`,{
@@ -1519,7 +1542,9 @@ async function cloudPull(){
     if(!res.ok)throw new Error('HTTP '+res.status);
     const json=await res.json();
     setSyncStatus('ok','✅ 已同步 '+new Date().toLocaleTimeString());
-    return json.record;
+    const record=json.record;
+    if(!isValidTourData(record)){setSyncStatus('ok','云端为空，已保留本机资料');return null;}
+    return record;
   }catch(e){setSyncStatus('error','❌ 拉取失败');return null;}
 }
 // ─────────────────────────────────────────────────────────────────────
@@ -1605,7 +1630,7 @@ function autoSave(){
   autoTimer = setTimeout(()=>{
     const data=readLS();
     let id = data.current;
-    if(!id){ id = genId(); data.current = id; writeLS(data); }
+    if(!id){ id = genId(); data.current = id; }
     saveTourById(id);
   }, 1000);
 }
@@ -1613,13 +1638,11 @@ function autoSave(){
 el('saveTour').addEventListener('click',()=>{
   const data=readLS();
   let id = data.current || genId();
-  data.current = id; writeLS(data);
   saveTourById(id);
 });
 
 el('newTour').addEventListener('click',()=>{
-  const id=genId(),data=readLS();
-  data.current=id; writeLS(data);
+  const id=genId();
   priceTbody.innerHTML=''; costTbody2.innerHTML=''; vendorPaymentTbody.innerHTML=''; refundTbody.innerHTML=''; revTbody.innerHTML=''; paymentTbody.innerHTML='';
   el('tourName').value='新旅行团'; el('tourCode').value='';
   el('tourDate').value=''; el('returnDate').value='';
@@ -1781,7 +1804,8 @@ el('cloudSaveConfig').addEventListener('click',async()=>{
     el('cloudTestResult').innerHTML='<span style="color:#2ecc71">✅ 连接成功！配置已保存。正在拉取最新数据...</span>';
     el('cloudPullBtn').style.display='';
     const json=await res.json();const remoteData=json.record;
-    if(remoteData&&remoteData.tours&&remoteData.tours.length){
+    if(isValidTourData(remoteData)){
+      saveLocalSnapshot('before-cloud-connect-pull');
       _writeLSOnly(remoteData);
       const cur=remoteData.tours.find(t=>t.id===remoteData.current)||remoteData.tours[remoteData.tours.length-1];
       if(cur){objectToPage(cur);refreshSelector(cur.id);}
@@ -1797,7 +1821,8 @@ el('cloudSaveConfig').addEventListener('click',async()=>{
 });
 el('cloudPullBtn').addEventListener('click',async()=>{
   const remoteData=await cloudPull();
-  if(remoteData&&remoteData.tours&&remoteData.tours.length){
+  if(isValidTourData(remoteData)){
+    saveLocalSnapshot('before-manual-cloud-pull');
     _writeLSOnly(remoteData);
     const cur=remoteData.tours.find(t=>t.id===remoteData.current)||remoteData.tours[remoteData.tours.length-1];
     if(cur){objectToPage(cur);refreshSelector(cur.id);}
@@ -1812,7 +1837,8 @@ el('cloudPullBtn').addEventListener('click',async()=>{
 
   // Try to pull from cloud on startup
   const remoteData = await cloudPull();
-  if(remoteData && remoteData.tours && remoteData.tours.length){
+  if(isValidTourData(remoteData)){
+    saveLocalSnapshot('before-startup-cloud-pull');
     _writeLSOnly(remoteData);
   }
 
@@ -1828,7 +1854,6 @@ el('cloudPullBtn').addEventListener('click',async()=>{
     el('loadRefundDemo').click();
     syncCommUI(); compute();
     const id=genId();
-    writeLS({tours:[],current:id});
     saveTourById(id);
   }
   enableAllRowDrag();
