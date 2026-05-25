@@ -605,6 +605,7 @@ button,a,select,input{touch-action:manipulation}
     <input id="cloudBinId" type="text" placeholder="68xxxxxxxxxxxxxxxxxxxxxxxx">
     <div style="display:flex;gap:8px;margin-top:4px">
       <button class="btn-primary" id="cloudSaveConfig" style="flex:1">✅ 保存并连接</button>
+      <button class="btn-ghost" id="cloudRestoreSnap" title="从本地滚动快照恢复">🛟 恢复快照</button>
       <button class="btn-ghost" id="cloudClearConfig">🗑 清除</button>
       <button class="btn-bad" id="cloudClose">✕ 关闭</button>
     </div>
@@ -1480,35 +1481,59 @@ function compute(){
 
 const LS_KEY='tourCalcPro_v7';
 const CLOUD_CFG_KEY='tourCalc_cloudCfg';
-const BACKUP_KEY='tourCalcPro_v7_backups';
-const CLOUD_SOFT_LIMIT_BYTES=95*1024;
+const SNAPSHOTS_KEY='tourCalcPro_snapshots';
+const MAX_SNAPSHOTS=10;
 const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-const readLS=()=>{try{return JSON.parse(localStorage.getItem(LS_KEY))||{tours:[],current:null};}catch(e){return{tours:[],current:null};}};
-const _writeLSOnly=d=>localStorage.setItem(LS_KEY,JSON.stringify(d));
-let cloudPushTimer=null,latestCloudData=null,cloudPushQueue=Promise.resolve();
-function isValidTourData(data){return !!(data&&Array.isArray(data.tours)&&data.tours.length>0);}
-function dataBytes(data){try{return new Blob([JSON.stringify(data)]).size;}catch(e){return JSON.stringify(data||{}).length;}}
-function saveLocalSnapshot(label,data=readLS()){
-  if(!isValidTourData(data))return;
+
+// ── Rolling local snapshot backup (protects against accidental overwrite)
+function saveSnapshot(data){
   try{
-    const list=JSON.parse(localStorage.getItem(BACKUP_KEY)||'[]');
-    list.unshift({at:new Date().toISOString(),label:label||'backup',data});
-    localStorage.setItem(BACKUP_KEY,JSON.stringify(list.slice(0,12)));
-  }catch(e){}
+    if(!data||!data.tours||!data.tours.length)return;
+    const snaps=JSON.parse(localStorage.getItem(SNAPSHOTS_KEY)||'[]');
+    if(snaps.length){
+      const last=snaps[snaps.length-1];
+      if(JSON.stringify(last.data.tours)===JSON.stringify(data.tours))return;
+    }
+    snaps.push({ts:Date.now(),data:JSON.parse(JSON.stringify(data))});
+    while(snaps.length>MAX_SNAPSHOTS)snaps.shift();
+    localStorage.setItem(SNAPSHOTS_KEY,JSON.stringify(snaps));
+  }catch(e){console.warn('snapshot failed',e);}
 }
-function scheduleCloudPush(data){
-  latestCloudData=data;
-  clearTimeout(cloudPushTimer);
-  cloudPushTimer=setTimeout(()=>{
-    const dataToPush=latestCloudData;
-    cloudPushQueue=cloudPushQueue.catch(()=>{}).then(()=>cloudPush(dataToPush));
-  },900);
-}
-const writeLS=d=>{_writeLSOnly(d);scheduleCloudPush(d);};
+function listSnapshotsRaw(){try{return JSON.parse(localStorage.getItem(SNAPSHOTS_KEY)||'[]');}catch(e){return[];}}
+window.tourListSnapshots=()=>{
+  const s=listSnapshotsRaw();
+  const out=s.map((x,i)=>({idx:i,time:new Date(x.ts).toLocaleString(),tours:x.data.tours?.length||0}));
+  console.table(out);
+  console.log('恢复请用：window.tourRestoreSnapshot(idx)');
+  return out;
+};
+window.tourRestoreSnapshot=(idx)=>{
+  const s=listSnapshotsRaw();
+  if(!s[idx]){console.warn('No snapshot at index',idx);return false;}
+  if(!confirm('恢复 '+new Date(s[idx].ts).toLocaleString()+' 的快照？\n（恢复后会暂停云端推送，请人工确认再 tourForcePush()）'))return false;
+  suppressCloudPush=true;
+  const d=s[idx].data; d.updatedAt=Date.now();
+  localStorage.setItem(LS_KEY,JSON.stringify(d));
+  location.reload();
+  return true;
+};
+
+const readLS=()=>{try{return JSON.parse(localStorage.getItem(LS_KEY))||{tours:[],current:null};}catch(e){return{tours:[],current:null};}};
+const _writeLSOnly=d=>{
+  d.updatedAt=Date.now();
+  localStorage.setItem(LS_KEY,JSON.stringify(d));
+  saveSnapshot(d);
+};
+const writeLS=d=>{_writeLSOnly(d);scheduleCloudPush();};
 
 // ── Cloud sync helpers ────────────────────────────────────────────────
 function getCloudCfg(){try{return JSON.parse(localStorage.getItem(CLOUD_CFG_KEY))||{};}catch(e){return{};}}
 function saveCloudCfg(cfg){localStorage.setItem(CLOUD_CFG_KEY,JSON.stringify(cfg));}
+
+let lastSeenCloudTs=0;
+let cloudReachable=null;
+let suppressCloudPush=false;
+
 function setSyncStatus(status,msg){
   const dot=el('syncDot'),txt=el('syncTxt'),pullBtn=el('cloudPullBtn');
   if(!dot||!txt)return;
@@ -1518,20 +1543,52 @@ function setSyncStatus(status,msg){
   else if(status==='ok'){dot.style.background='#2ecc71';txt.textContent=msg||'✅ 已同步';if(pullBtn)pullBtn.style.display='';}
   else{dot.style.background='#ff6b6b';txt.textContent=msg||'❌ 同步失败';if(pullBtn)pullBtn.style.display='';}
 }
+
+let cloudPushTimer=null;
+function scheduleCloudPush(){
+  clearTimeout(cloudPushTimer);
+  cloudPushTimer=setTimeout(()=>{cloudPush(readLS());},8000);
+}
+
 async function cloudPush(data){
   const cfg=getCloudCfg();if(!cfg.binId||!cfg.apiKey)return;
-  if(!isValidTourData(data)){setSyncStatus('ok','本机已保存，空资料未上传');return;}
-  if(dataBytes(data)>CLOUD_SOFT_LIMIT_BYTES){setSyncStatus('error','资料太大，未上传云端，请导出备份');return;}
-  setSyncStatus('loading','上传中...');
+  if(suppressCloudPush){
+    setSyncStatus('error','⛔ 推送已暂停（防覆盖云端较新数据）');
+    return;
+  }
+  if(!data||!data.tours||!data.tours.length){
+    console.warn('[CloudSync] Refusing to push empty data to cloud');
+    setSyncStatus('error','⚠️ 拒绝推送空数据');
+    return;
+  }
+  setSyncStatus('loading','检查云端...');
   try{
+    try{
+      const head=await fetch(`https://api.jsonbin.io/v3/b/${cfg.binId}/latest`,{headers:{'X-Master-Key':cfg.apiKey}});
+      if(head.ok){
+        const j=await head.json();
+        const remoteTs=(j&&j.record&&j.record.updatedAt)||0;
+        const remoteHasTours=!!(j&&j.record&&j.record.tours&&j.record.tours.length);
+        if(remoteHasTours && remoteTs && remoteTs > lastSeenCloudTs + 1500){
+          suppressCloudPush=true;
+          setSyncStatus('error','⚠️ 云端有更新版本，已暂停推送');
+          console.warn('[CloudSync] Conflict: localLastSeen='+lastSeenCloudTs+' cloud='+remoteTs+'. Click 「🔄 拉取最新」or run tourForcePush().');
+          return;
+        }
+      }
+    }catch(_){ }
+    setSyncStatus('loading','上传中...');
     const res=await fetch(`https://api.jsonbin.io/v3/b/${cfg.binId}`,{
       method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':cfg.apiKey},
       body:JSON.stringify(data)
     });
     if(!res.ok)throw new Error('HTTP '+res.status);
+    lastSeenCloudTs=data.updatedAt||Date.now();
+    cloudReachable=true;
     setSyncStatus('ok','✅ 已同步 '+new Date().toLocaleTimeString());
-  }catch(e){setSyncStatus('error','❌ 上传失败');}
+  }catch(e){cloudReachable=false;setSyncStatus('error','❌ 上传失败');}
 }
+
 async function cloudPull(){
   const cfg=getCloudCfg();if(!cfg.binId||!cfg.apiKey)return null;
   setSyncStatus('loading','拉取中...');
@@ -1541,12 +1598,21 @@ async function cloudPull(){
     });
     if(!res.ok)throw new Error('HTTP '+res.status);
     const json=await res.json();
+    cloudReachable=true;
+    lastSeenCloudTs=(json&&json.record&&json.record.updatedAt)||0;
     setSyncStatus('ok','✅ 已同步 '+new Date().toLocaleTimeString());
-    const record=json.record;
-    if(!isValidTourData(record)){setSyncStatus('ok','云端为空，已保留本机资料');return null;}
-    return record;
-  }catch(e){setSyncStatus('error','❌ 拉取失败');return null;}
+    return json.record;
+  }catch(e){cloudReachable=false;setSyncStatus('error','❌ 拉取失败');return null;}
 }
+
+window.tourForcePush=async()=>{
+  const data=readLS();
+  if(!data.tours.length){alert('本地无数据，拒绝推送');return;}
+  if(!confirm('⚠️ 强制用本地覆盖云端？\n云端当前内容将被替换为本地的 '+data.tours.length+' 个团档案。'))return;
+  suppressCloudPush=false;
+  lastSeenCloudTs=Date.now();
+  await cloudPush(data);
+};
 // ─────────────────────────────────────────────────────────────────────
 
 function getAllTableData(){
@@ -1630,7 +1696,7 @@ function autoSave(){
   autoTimer = setTimeout(()=>{
     const data=readLS();
     let id = data.current;
-    if(!id){ id = genId(); data.current = id; }
+    if(!id){ id = genId(); data.current = id; writeLS(data); }
     saveTourById(id);
   }, 1000);
 }
@@ -1638,11 +1704,13 @@ function autoSave(){
 el('saveTour').addEventListener('click',()=>{
   const data=readLS();
   let id = data.current || genId();
+  data.current = id; writeLS(data);
   saveTourById(id);
 });
 
 el('newTour').addEventListener('click',()=>{
-  const id=genId();
+  const id=genId(),data=readLS();
+  data.current=id; writeLS(data);
   priceTbody.innerHTML=''; costTbody2.innerHTML=''; vendorPaymentTbody.innerHTML=''; refundTbody.innerHTML=''; revTbody.innerHTML=''; paymentTbody.innerHTML='';
   el('tourName').value='新旅行团'; el('tourCode').value='';
   el('tourDate').value=''; el('returnDate').value='';
@@ -1787,6 +1855,16 @@ el('cloudConfigBtn').addEventListener('click',()=>{
   el('cloudOverlay').classList.add('show');
 });
 el('cloudClose').addEventListener('click',()=>el('cloudOverlay').classList.remove('show'));
+el('cloudRestoreSnap').addEventListener('click',()=>{
+  const snaps=listSnapshotsRaw();
+  if(!snaps.length){el('cloudTestResult').innerHTML='<span style="color:#ffb020">本地暂无快照（首次使用或未做过修改）</span>';return;}
+  const list=snaps.map((x,i)=>(i+1)+'. '+new Date(x.ts).toLocaleString()+'  ('+(x.data.tours?.length||0)+' 个团档案)').join('\n');
+  const pick=prompt('请输入要恢复的快照编号（1 ~ '+snaps.length+'）：\n\n'+list+'\n\n注意：恢复后云端推送会暂停，请人工确认是否要覆盖云端。');
+  if(pick===null)return;
+  const idx=parseInt(pick,10)-1;
+  if(isNaN(idx)||idx<0||idx>=snaps.length){alert('编号无效');return;}
+  window.tourRestoreSnapshot(idx);
+});
 el('cloudClearConfig').addEventListener('click',()=>{
   if(!confirm('清除云同步配置？'))return;
   localStorage.removeItem(CLOUD_CFG_KEY);
@@ -1804,15 +1882,20 @@ el('cloudSaveConfig').addEventListener('click',async()=>{
     el('cloudTestResult').innerHTML='<span style="color:#2ecc71">✅ 连接成功！配置已保存。正在拉取最新数据...</span>';
     el('cloudPullBtn').style.display='';
     const json=await res.json();const remoteData=json.record;
-    if(isValidTourData(remoteData)){
-      saveLocalSnapshot('before-cloud-connect-pull');
+    if(remoteData&&remoteData.tours&&remoteData.tours.length){
       _writeLSOnly(remoteData);
+      suppressCloudPush=false;
+      lastSeenCloudTs=remoteData.updatedAt||Date.now();
       const cur=remoteData.tours.find(t=>t.id===remoteData.current)||remoteData.tours[remoteData.tours.length-1];
       if(cur){objectToPage(cur);refreshSelector(cur.id);}
       el('cloudTestResult').innerHTML='<span style="color:#2ecc71">✅ 已拉取 '+remoteData.tours.length+' 个团档案！</span>';
     }else{
-      // Push local data to cloud
-      const localData=readLS();if(localData.tours.length)await cloudPush(localData);
+      const localData=readLS();
+      if(localData.tours.length){
+        suppressCloudPush=false;
+        lastSeenCloudTs=Date.now();
+        await cloudPush(localData);
+      }
       el('cloudTestResult').innerHTML='<span style="color:#2ecc71">✅ 连接成功！本地数据已上传。</span>';
     }
     setSyncStatus('ok','✅ 已连接');
@@ -1821,9 +1904,9 @@ el('cloudSaveConfig').addEventListener('click',async()=>{
 });
 el('cloudPullBtn').addEventListener('click',async()=>{
   const remoteData=await cloudPull();
-  if(isValidTourData(remoteData)){
-    saveLocalSnapshot('before-manual-cloud-pull');
+  if(remoteData&&remoteData.tours&&remoteData.tours.length){
     _writeLSOnly(remoteData);
+    suppressCloudPush=false;
     const cur=remoteData.tours.find(t=>t.id===remoteData.current)||remoteData.tours[remoteData.tours.length-1];
     if(cur){objectToPage(cur);refreshSelector(cur.id);}
     alert('✅ 已拉取最新数据！共 '+remoteData.tours.length+' 个团档案。');
@@ -1832,13 +1915,11 @@ el('cloudPullBtn').addEventListener('click',async()=>{
 // ─────────────────────────────────────────────────────────────────────
 
 (async function init(){
-  // Restore cloud config UI state
   setSyncStatus('none');
+  const cfg=getCloudCfg();
 
-  // Try to pull from cloud on startup
   const remoteData = await cloudPull();
-  if(isValidTourData(remoteData)){
-    saveLocalSnapshot('before-startup-cloud-pull');
+  if(remoteData && remoteData.tours && remoteData.tours.length){
     _writeLSOnly(remoteData);
   }
 
@@ -1848,12 +1929,23 @@ el('cloudPullBtn').addEventListener('click',async()=>{
     objectToPage(saved);
     refreshSelector(saved.id);
   } else {
+    if(cfg.binId && cfg.apiKey && cloudReachable===false){
+      suppressCloudPush=true;
+      setSyncStatus('error','⛔ 云端不可达，已暂停推送');
+      alert('⚠️ 云同步连接失败，且本地暂无数据。\n\n为防止用 Demo 数据覆盖云端真实数据，所有云端推送已暂停。\n\n请检查网络，然后点击「🔄 拉取最新」重试。\n如需查看本地快照：浏览器控制台运行 window.tourListSnapshots()');
+      priceTbody.innerHTML='';costTbody2.innerHTML='';vendorPaymentTbody.innerHTML='';refundTbody.innerHTML='';revTbody.innerHTML='';paymentTbody.innerHTML='';
+      el('tourName').value='';el('tourCode').value='';
+      syncCommUI();compute();
+      enableAllRowDrag();
+      return;
+    }
     el('loadPriceDemo').click();
     el('loadDemo').click();
     el('loadRevDemo').click();
     el('loadRefundDemo').click();
     syncCommUI(); compute();
     const id=genId();
+    _writeLSOnly({tours:[],current:id});
     saveTourById(id);
   }
   enableAllRowDrag();
